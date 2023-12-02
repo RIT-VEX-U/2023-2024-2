@@ -10,7 +10,7 @@ using namespace vex;
 // Digital sensors
 
 // Analog sensors
-inertial imu(PORT8);
+inertial imu(PORT4);
 
 // ================ OUTPUTS ================
 // Motors
@@ -99,7 +99,8 @@ robot_specs_t robot_cfg = {
     .drive_feedback = new PID(drive_pid_cfg),//&drive_mc,
     .turn_feedback = new PID(turn_pid_cfg),
     .correction_pid = (PID::pid_config_t){
-        .p = .03,
+        .p = .01,
+        .d = .001
     } };
 
 OdometryTank odom{ left_motors, right_motors, robot_cfg,&imu };
@@ -204,6 +205,6 @@ void robot_init()
     };
 
     screen::start_screen(Brain.Screen, pages, 2);
-    // imu.calibrate();
+    imu.calibrate();
     // gps_sensor.calibrate();
 }

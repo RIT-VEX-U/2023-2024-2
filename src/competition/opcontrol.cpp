@@ -1,4 +1,5 @@
 #include "competition/opcontrol.h"
+#include "competition/autonomous.h"
 #include "automation.h"
 #include "robot-config.h"
 #include "vex.h"
@@ -9,12 +10,19 @@
 void tuning()
 {
     bool done = false;
-    odom.set_position();
-    while (con.ButtonA.pressing()) {
+    odom.set_position({.x=18, .y=125, .rot=204});
+    while (con.ButtonUp.pressing()) {
         // if(!done && drive_sys.drive_forward(12, directionType::fwd, .5))
         //     done = true;
 
-        if (!done && drive_sys.turn_degrees(90, .5))
+        // if (!done && drive_sys.turn_to_heading(330, .5))
+        //     done = true;
+        
+        if (!done && drive_sys.pure_pursuit(PurePursuit::Path({
+                {.x=18, .y=125},
+                {.x=38, .y=134},
+                {.x=98, .y=130},
+                }, 6), directionType::rev, .5))
             done = true;
 
         pose_t pos = odom.get_position();
@@ -28,12 +36,13 @@ void tuning()
  */
 void opcontrol()
 {
+    // autonomous();
     // vexDelay(1000);
 
-    while (imu.isCalibrating()) // || gps_sensor.isCalibrating())
-    {
-        vexDelay(20);
-    }
+    // while (imu.isCalibrating()) // || gps_sensor.isCalibrating())
+    // {
+    //     vexDelay(20);
+    // }
 
     static bool enable_matchload = false;
 
@@ -114,8 +123,7 @@ void opcontrol()
 
         // tuning();
 
-        matchload_1([&](){ return enable_matchload;}); // Hold
-        matchload_1([](){ return con.ButtonA.pressing();}); // Hold
+        matchload_1([&](){ return enable_matchload;}); // Toggle
         // Controls
         // Intake
 

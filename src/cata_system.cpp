@@ -11,8 +11,8 @@ const double intake_upper_volt_hold = 6;
 const double intake_lower_volt = 10.0;
 const double intake_sensor_dist_mm = 150;
 
-const double cata_target_charge = 98.5;
-const double cata_target_intake = 98.5;
+const double cata_target_charge = 98.8;
+const double cata_target_intake = 98.8;
 
 PID::pid_config_t pc = PID::pid_config_t{ .p = 1,
 // .i = 2,
@@ -167,9 +167,9 @@ int thread_func(void* void_cata) {
             break;
         }
 
-        printf("intake_dist: %f, pot: %.2f, pid: %.2f\n",
-           intake_watcher.objectDistance(distanceUnits::mm), cata_pos,
-           cata_pid.get());
+        // printf("intake_dist: %f, pot: %.2f, pid: %.2f\n",
+        //    intake_watcher.objectDistance(distanceUnits::mm), cata_pos,
+        //    cata_pid.get());
 
         if (cata.cata_watcher.isNearObject() &&
             cata.intake_watcher.objectDistance(distanceUnits::mm) < 150) {
