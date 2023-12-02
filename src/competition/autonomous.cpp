@@ -87,9 +87,9 @@ void skills()
         odom.SetPositionCmd({.x=18, .y=126, .rot=135}),
         
         // 1 - Turn and shoot preload
-        drive_sys.TurnToHeadingCmd(150, .5),
+        drive_sys.TurnToHeadingCmd(160, .5),
         cata_sys.Fire(),
-        new DelayCommand(300),
+        new DelayCommand(800),
 
         // 2 - Turn to matchload zone & begin matchloading
         drive_sys.TurnToHeadingCmd(135, .5),
@@ -97,15 +97,17 @@ void skills()
         drive_sys.DriveToPointCmd({.x=13.8, .y=130.3}, FWD, 0.5),
 
         new FunctionCommand([](){cata_sys.send_command(CataSys::Command::StopFiring); return true;}),
-
+        cata_sys.IntakeFully(),
         // Matchloading phase
         (new RepeatUntil(InOrder{
             intakeToCata->withTimeout(3),
+            // cata_sys.Fire(),
             drive_sys.DriveToPointCmd({.x=18, .y=126}, REV, 0.5)->withTimeout(1),
-            drive_sys.TurnToHeadingCmd(150, 0.5)->withTimeout(1),
+            drive_sys.TurnToHeadingCmd(160, 0.5)->withTimeout(1),
             cata_sys.Fire(),
             new DelayCommand(300),
             drive_sys.TurnToHeadingCmd(135, 130.3)->withTimeout(1),
+            new FunctionCommand([](){cata_sys.send_command(CataSys::Command::StopFiring); return true;}),
             cata_sys.IntakeFully(),
             drive_sys.DriveToPointCmd({.x=13, .y=130}, FWD, 0.5)->withTimeout(1),
             
@@ -114,7 +116,7 @@ void skills()
 
         // Last preload
         drive_sys.DriveToPointCmd({.x=18, .y=126}, FWD, 0.5),
-        drive_sys.TurnToHeadingCmd(150, 0.5),
+        drive_sys.TurnToHeadingCmd(160, 0.5),
         cata_sys.Fire(),
         new DelayCommand(300),
         cata_sys.StopIntake(),
@@ -129,14 +131,15 @@ void skills()
         //         })),
         //         new WingCmd(RIGHT, true)
         //     },
+        cata_sys.StopIntake(),
         drive_sys.PurePursuitCmd(PurePursuit::Path({
-            {.x=19, .y=128},
-            {.x=40, .y=132},
-            {.x=92, .y=132},
+            {.x=19, .y=133},
+            {.x=40, .y=136},
+            {.x=92, .y=136},
             {.x=105, .y=128},
-            {.x=114, .y=117},
-            {.x=118, .y=98},
-            }, 8), REV, .5),
+            {.x=116, .y=117},
+            {.x=120, .y=98},
+            }, 8), REV, .5)->withTimeout(4),
         // },
 
 
@@ -150,7 +153,13 @@ void skills()
 
         //Wall Align
         drive_sys.TurnToHeadingCmd(90, 0.5),
-        drive_sys.DriveForwardCmd(100, FWD, 0.3)->withTimeout(3),
+        drive_sys.DriveForwardCmd(100, FWD, 0.25)->withTimeout(3),
+        cata_sys.Outtake(),
+        drive_sys.TurnDegreesCmd(90, .5)->withTimeout(1),
+        drive_sys.TurnDegreesCmd(-90, .5)->withTimeout(1),
+        drive_sys.DriveForwardCmd(100, FWD, 0.25)->withTimeout(2),
+        cata_sys.StopIntake(),
+
         odom.SetPositionCmd({138, 138, 45}),
         drive_sys.DriveToPointCmd({.x=127, .y=127}, REV, .5),
         new WingCmd(LEFT, true),
