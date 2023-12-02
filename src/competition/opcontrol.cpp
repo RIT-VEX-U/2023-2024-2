@@ -114,7 +114,7 @@ void opcontrol()
 
         // tuning();
 
-        // matchload_1(enable_matchload); // Toggle
+        matchload_1([&](){ return enable_matchload;}); // Hold
         matchload_1([](){ return con.ButtonA.pressing();}); // Hold
         // Controls
         // Intake

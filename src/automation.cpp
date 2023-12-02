@@ -22,15 +22,7 @@ void matchload_1(std::function<bool()> enable)
         return intake_watcher.objectDistance(distanceUnits::mm) < 150 || cata_watcher.isNearObject();
     });
 
-    static timer intake_tmr;
-    intake_tmr.reset();
     FunctionCommand *waitForCata = new FunctionCommand([&](){
-        if(intake_tmr.time(sec) > 1)
-            cata_sys.send_command(CataSys::Command::IntakeOut);
-        else if( intake_tmr.time(sec) > 1.5)
-            intake_tmr.reset();
-        else
-            cata_sys.send_command(CataSys::Command::IntakeIn);
 
         return cata_watcher.isNearObject();
     });
@@ -43,14 +35,13 @@ void matchload_1(std::function<bool()> enable)
             drive_sys.drive_tank(0.2, 0.2);
             return drive_tmr.time(sec) > .4;
         }),
-        waitForIntake, 
+        waitForCata, 
         drive_sys.DriveForwardCmd(12, REV, .5),
-        drive_sys.TurnDegreesCmd(10, .5),
-        waitForCata->withTimeout(2),
+        drive_sys.TurnDegreesCmd(20, .5),
         cata_sys.Fire(), 
         new DelayCommand(500),
         cata_sys.IntakeFully(),
-        drive_sys.TurnDegreesCmd(-10, .5),
+        drive_sys.TurnDegreesCmd(-20, .5),
         drive_sys.DriveForwardCmd(12, FWD, .5),
     };
 

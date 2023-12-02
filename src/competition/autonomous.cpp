@@ -53,13 +53,13 @@ void skills()
 {
     FunctionCommand *intakeToCata = new FunctionCommand([](){
         // Run intake in, periodically push out in case it's caught.
-        static vex::timer intake_tmr;
-        if(intake_tmr.time(sec) > 1)
-            cata_sys.send_command(CataSys::Command::IntakeOut);
-        else if( intake_tmr.time(sec) > 1.5)
-            intake_tmr.reset();
-        else
-            cata_sys.send_command(CataSys::Command::IntakeIn);
+        // static vex::timer intake_tmr;
+        // if(intake_tmr.time(sec) > 1)
+        //     cata_sys.send_command(CataSys::Command::IntakeOut);
+        // else if( intake_tmr.time(sec) > 1.5)
+        //     intake_tmr.reset();
+        // else
+        //     cata_sys.send_command(CataSys::Command::IntakeIn);
 
         // Only return when the ball is in the bot
         return cata_watcher.isNearObject();
