@@ -3,16 +3,16 @@
 
 // const double inake_enable_lower_threshold = 70.0;
 // const double intake_enable_upper_threshold = 120;
-const double inake_enable_lower_threshold = 150;
-const double intake_enable_upper_threshold = 200;
+const double inake_enable_lower_threshold = 0;
+const double intake_enable_upper_threshold = 100;
 
 const double intake_upper_volt = 12;
 const double intake_upper_volt_hold = 6;
 const double intake_lower_volt = 10.0;
 const double intake_sensor_dist_mm = 150;
 
-const double cata_target_charge = 177;
-const double cata_target_intake = 177;
+const double cata_target_charge = 100;
+const double cata_target_intake = 100;
 
 PID::pid_config_t pc = PID::pid_config_t{ .p = 1,
 // .i = 2,
@@ -309,7 +309,23 @@ AutoCommand* CataSys::IntakeFully() {
         });
 }
 
+AutoCommand* CataSys::Outtake()
+{
+    return new FunctionCommand([&](){
+        send_command(Command::IntakeOut);
+        return true;
+    });
+}
+
 AutoCommand* CataSys::WaitForIntake() {
     return new FunctionCommand(
         [&]() { return intake_watcher.objectDistance(distanceUnits::mm) < 150; });
+}
+
+AutoCommand* CataSys::StopIntake()
+{
+    return new FunctionCommand([&](){
+        send_command(Command::StopIntake);
+        return true;
+    });
 }

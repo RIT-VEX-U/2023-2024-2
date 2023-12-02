@@ -43,6 +43,8 @@ public:
     AutoCommand *IntakeToHold();
     AutoCommand *IntakeFully();
     AutoCommand *WaitForIntake();
+    AutoCommand *Outtake();
+    AutoCommand* StopIntake();
 
     // Page
     screen::Page *Page();

@@ -1,8 +1,25 @@
 #include "competition/opcontrol.h"
-#include "vex.h"
-#include "robot-config.h"
 #include "automation.h"
+#include "robot-config.h"
+#include "vex.h"
 #include <atomic>
+
+void tuning()
+{
+    bool done = false;
+    odom.set_position();
+    while (con.ButtonA.pressing()) {
+        // if(!done && drive_sys.drive_forward(12, directionType::fwd, .5))
+        //     done = true;
+
+        if (!done && drive_sys.turn_degrees(90, .5))
+            done = true;
+
+        pose_t pos = odom.get_position();
+        printf("x: %.2f, y: %.2f, r: %.2f\n", pos.x, pos.y, pos.rot);
+        vexDelay(10);
+    }
+}
 
 // #define Tank
 
@@ -32,15 +49,15 @@ void opcontrol()
     // SUBJECT TO CHANGE!
     // Wings: DOWN
 #ifdef COMP_BOT
-    con.ButtonL1.pressed(   [](){ cata_sys.send_command(CataSys::Command::StartFiring); });
-    con.ButtonL1.released(  [](){ cata_sys.send_command(CataSys::Command::StopFiring); });
-    con.ButtonR1.pressed(   [](){ cata_sys.send_command(CataSys::Command::IntakeIn); });
-    con.ButtonR2.pressed(   [](){ cata_sys.send_command(CataSys::Command::IntakeOut); });
-    con.ButtonL2.pressed(   [](){ cata_sys.send_command(CataSys::Command::IntakeHold); });
-    con.ButtonDown.pressed( [](){ left_wing.set(!left_wing.value()); });
-    con.ButtonB.pressed(    [](){ right_wing.set(!right_wing.value()); });
-    con.ButtonA.pressed(    [](){ enable_matchload = !enable_matchload; });
-    pose_t start_pose = {.x = 16, .y = 144 - 16, .rot = 135};
+    con.ButtonL1.pressed([]() { cata_sys.send_command(CataSys::Command::StartFiring); });
+    con.ButtonL1.released([]() { cata_sys.send_command(CataSys::Command::StopFiring); });
+    con.ButtonR1.pressed([]() { cata_sys.send_command(CataSys::Command::IntakeIn); });
+    con.ButtonR2.pressed([]() { cata_sys.send_command(CataSys::Command::IntakeOut); });
+    con.ButtonL2.pressed([]() { cata_sys.send_command(CataSys::Command::IntakeHold); });
+    con.ButtonDown.pressed([]() { left_wing.set(!left_wing.value()); });
+    con.ButtonB.pressed([]() { right_wing.set(!right_wing.value()); });
+    con.ButtonA.pressed([]() { enable_matchload = !enable_matchload; });
+    pose_t start_pose = { .x = 16, .y = 144 - 16, .rot = 135 };
 
     // CommandController cc{
     //     new RepeatUntil(
@@ -66,27 +83,28 @@ void opcontrol()
     // return;
 
 #endif
-    // ================ INIT ================
-    while (true)
-    {
-        if (!con.ButtonR1.pressing() && !con.ButtonR2.pressing() && !con.ButtonL2.pressing())
-        {
+  // ================ INIT ================
+    while (true) {
+        if (!con.ButtonR1.pressing() && !con.ButtonR2.pressing() &&
+            !con.ButtonL2.pressing()) {
             cata_sys.send_command(CataSys::Command::StopIntake);
         }
 #ifdef Tank
         double l = con.Axis3.position() / 100.0;
         double r = con.Axis2.position() / 100.0;
-        drive_sys.drive_tank(l, r, 1, TankDrive::BrakeType::Smart);
+        drive_sys.drive_tank(l, r, 1, TankDrive::BrakeType::None);
 
 #else
 
         double f = con.Axis3.position() / 100.0;
         double s = con.Axis1.position() / 100.0;
-        drive_sys.drive_arcade(f, s, 1, TankDrive::BrakeType::Smart);
+        drive_sys.drive_arcade(f, s, 1, TankDrive::BrakeType::None);
 #endif
 
+        // tuning();
+
         // matchload_1(enable_matchload); // Toggle
-        matchload_1([](){ return con.ButtonA.pressing();}); // Hold
+        // matchload_1([](){ return con.ButtonA.pressing();}); // Hold
         // Controls
         // Intake
 
