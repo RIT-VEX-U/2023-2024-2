@@ -29,11 +29,16 @@ void matchload_1(std::function<bool()> enable)
     CommandController cmd{
         cata_sys.IntakeFully(),
         intakeToCata->withTimeout(3),
-        cata_sys.Fire(),
-        drive_sys.DriveForwardCmd(8, REV, 0.5)->withTimeout(1),
+        new Async{
+            new InOrder{
+                new DelayCommand(200),
+                cata_sys.Fire(),
+            }
+        },
+        drive_sys.DriveForwardCmd(14, REV, 0.6)->withTimeout(1),
         new FunctionCommand([](){cata_sys.send_command(CataSys::Command::StopFiring); return true;}),
         cata_sys.IntakeFully(),
-        drive_sys.DriveForwardCmd(8, FWD, 0.5)->withTimeout(1),
+        drive_sys.DriveForwardCmd(14, FWD, 0.6)->withTimeout(1),
     };
 
     // Cancel the operation if the button is ever released
