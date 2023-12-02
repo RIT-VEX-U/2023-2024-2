@@ -102,17 +102,24 @@ void skills()
         (new RepeatUntil(InOrder{
             intakeToCata->withTimeout(3),
             cata_sys.Fire(),
-            drive_sys.DriveToPointCmd({.x=18, .y=126}, REV, 0.5)->withTimeout(1),
+            // new Async{
+            //     new InOrder{
+            //         new DelayCommand(300),
+            //         cata_sys.Fire(),
+            //     }
+            // },
+            // drive_sys.DriveToPointCmd({.x=18, .y=126}, REV, 0.5)->withTimeout(1),
+            drive_sys.DriveForwardCmd(8, REV, 0.5)->withTimeout(1),
             // drive_sys.TurnToHeadingCmd(160, 0.5)->withTimeout(1),
             // cata_sys.Fire(),
             // new DelayCommand(300),
             // drive_sys.TurnToHeadingCmd(135, 130.3)->withTimeout(1),
             new FunctionCommand([](){cata_sys.send_command(CataSys::Command::StopFiring); return true;}),
             cata_sys.IntakeFully(),
-            drive_sys.DriveToPointCmd({.x=13, .y=130}, FWD, 0.5)->withTimeout(1),
+            drive_sys.DriveForwardCmd(8, FWD, 0.5)->withTimeout(1),
             
         }, new FunctionCondition([](){return false;})))
-            ->withTimeout(50),
+            ->withTimeout(48),
 
         // Last preload
         drive_sys.DriveToPointCmd({.x=18, .y=126}, FWD, 0.5),
