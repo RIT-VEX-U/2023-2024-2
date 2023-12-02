@@ -111,8 +111,8 @@ vex::pot cata_pot(Brain.ThreeWirePort.H);
 
 // VISION PORT
 
-vex::digital_out left_wing(Brain.ThreeWirePort.A);
-vex::digital_out right_wing(Brain.ThreeWirePort.B);
+vex::digital_out left_wing(Brain.ThreeWirePort.G); // Check if swapped
+vex::digital_out right_wing(Brain.ThreeWirePort.F);
 
 CataSys cata_sys(intake_watcher, cata_pot, cata_watcher, cata_motors, intake_roller, intake_combine);
 

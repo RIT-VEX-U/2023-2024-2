@@ -4,6 +4,8 @@
 #include "vex.h"
 #include <atomic>
 
+#define Tank
+
 void tuning()
 {
     bool done = false;
@@ -21,8 +23,6 @@ void tuning()
     }
 }
 
-// #define Tank
-
 /**
  * Main entrypoint for the driver control period
  */
@@ -37,6 +37,9 @@ void opcontrol()
 
     static bool enable_matchload = false;
 
+    left_wing.set(false);
+    right_wing.set(false);
+
     // Controls:
     // Cata: Hold L1 (Not on rising edge)
     // -- Don't shoot until there's a ball
@@ -49,13 +52,25 @@ void opcontrol()
     // SUBJECT TO CHANGE!
     // Wings: DOWN
 #ifdef COMP_BOT
-    con.ButtonL1.pressed([]() { cata_sys.send_command(CataSys::Command::StartFiring); });
-    con.ButtonL1.released([]() { cata_sys.send_command(CataSys::Command::StopFiring); });
+    con.ButtonL2.pressed([]() { cata_sys.send_command(CataSys::Command::StartFiring); });
+    con.ButtonL2.released([]() { cata_sys.send_command(CataSys::Command::StopFiring); });
+
     con.ButtonR1.pressed([]() { cata_sys.send_command(CataSys::Command::IntakeIn); });
+    con.ButtonR1.released([](){ cata_sys.send_command(CataSys::Command::StopIntake); });
+
     con.ButtonR2.pressed([]() { cata_sys.send_command(CataSys::Command::IntakeOut); });
-    con.ButtonL2.pressed([]() { cata_sys.send_command(CataSys::Command::IntakeHold); });
-    con.ButtonDown.pressed([]() { left_wing.set(!left_wing.value()); });
-    con.ButtonB.pressed([]() { right_wing.set(!right_wing.value()); });
+    con.ButtonR2.released([](){ cata_sys.send_command(CataSys::Command::StopIntake); });
+
+    con.ButtonL1.pressed([]() { cata_sys.send_command(CataSys::Command::IntakeHold); });
+    con.ButtonL1.released([](){ cata_sys.send_command(CataSys::Command::StopIntake);});
+
+    con.ButtonB.pressed([]() { 
+        static bool wing_isdown = false;
+        wing_isdown = !wing_isdown;
+        left_wing.set(wing_isdown);
+        right_wing.set(wing_isdown); 
+    });
+
     con.ButtonA.pressed([]() { enable_matchload = !enable_matchload; });
     pose_t start_pose = { .x = 16, .y = 144 - 16, .rot = 135 };
 
@@ -85,10 +100,6 @@ void opcontrol()
 #endif
   // ================ INIT ================
     while (true) {
-        if (!con.ButtonR1.pressing() && !con.ButtonR2.pressing() &&
-            !con.ButtonL2.pressing()) {
-            cata_sys.send_command(CataSys::Command::StopIntake);
-        }
 #ifdef Tank
         double l = con.Axis3.position() / 100.0;
         double r = con.Axis2.position() / 100.0;
@@ -104,7 +115,7 @@ void opcontrol()
         // tuning();
 
         // matchload_1(enable_matchload); // Toggle
-        // matchload_1([](){ return con.ButtonA.pressing();}); // Hold
+        matchload_1([](){ return con.ButtonA.pressing();}); // Hold
         // Controls
         // Intake
 
