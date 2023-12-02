@@ -17,13 +17,10 @@ void matchload_1(std::function<bool()> enable)
 {
     if(!enable())
         return;
-        
-    FunctionCommand *waitForIntake = new FunctionCommand([&](){
-        return intake_watcher.objectDistance(distanceUnits::mm) < 150 || cata_watcher.isNearObject();
-    });
 
-    FunctionCommand *waitForCata = new FunctionCommand([&](){
-
+    FunctionCommand *intakeToCata = new FunctionCommand([](){
+        drive_sys.drive_tank(0.15, 0.15);
+        // Only return when the ball is in the bot
         return cata_watcher.isNearObject();
     });
 
@@ -31,18 +28,12 @@ void matchload_1(std::function<bool()> enable)
     drive_tmr.reset();
     CommandController cmd{
         cata_sys.IntakeFully(),
-        new FunctionCommand([](){
-            drive_sys.drive_tank(0.2, 0.2);
-            return drive_tmr.time(sec) > .4;
-        }),
-        waitForCata, 
-        drive_sys.DriveForwardCmd(12, REV, .5),
-        drive_sys.TurnDegreesCmd(20, .5),
-        cata_sys.Fire(), 
-        new DelayCommand(500),
+        intakeToCata->withTimeout(3),
+        cata_sys.Fire(),
+        drive_sys.DriveForwardCmd(8, REV, 0.5)->withTimeout(1),
+        new FunctionCommand([](){cata_sys.send_command(CataSys::Command::StopFiring); return true;}),
         cata_sys.IntakeFully(),
-        drive_sys.TurnDegreesCmd(-20, .5),
-        drive_sys.DriveForwardCmd(12, FWD, .5),
+        drive_sys.DriveForwardCmd(8, FWD, 0.5)->withTimeout(1),
     };
 
     // Cancel the operation if the button is ever released
