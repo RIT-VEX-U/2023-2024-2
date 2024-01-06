@@ -122,12 +122,12 @@ void skills()
             ->withTimeout(48),
 
         // Last preload
-        drive_sys.DriveToPointCmd({.x=18, .y=126}, FWD, 0.5),
-        drive_sys.TurnToHeadingCmd(160, 0.5),
+        drive_sys.DriveToPointCmd({.x=18, .y=126}, FWD, 0.5)->withTimeout(1),
+        drive_sys.TurnToHeadingCmd(160, 0.5)->withTimeout(1),
         cata_sys.Fire(),
         new DelayCommand(300),
         cata_sys.StopIntake(),
-        drive_sys.TurnToHeadingCmd(204, 0.5),
+        drive_sys.TurnToHeadingCmd(204, 0.5)->withTimeout(1),
 
         // Drive through "The Passage" & push into side of goal
         // Push into side of goal
