@@ -36,13 +36,13 @@ void tuning()
  */
 void opcontrol()
 {
-    // autonomous();
+    autonomous();
     // vexDelay(1000);
 
-    // while (imu.isCalibrating()) // || gps_sensor.isCalibrating())
-    // {
-    //     vexDelay(20);
-    // }
+    while (imu.isCalibrating() || gps_sensor.isCalibrating())
+    {
+        vexDelay(20);
+    }
 
     static bool enable_matchload = false;
 
@@ -161,6 +161,18 @@ void opcontrol()
         // tuning();
 
         matchload_1([&](){ return enable_matchload;}); // Toggle
+
+        printf("x: %f\n", gps_sensor.xPosition(distanceUnits::in));
+
+        // if (gps_sensor.quality() > 95)
+        // {
+        //     odom.set_position({
+        //         .x=gps_sensor.xPosition(distanceUnits::in) + 72, 
+        //         .y=gps_sensor.yPosition(distanceUnits::in) + 72,
+        //         .rot=gps_sensor.heading(),
+        //     });
+        // }
+
         // Controls
         // Intake
 

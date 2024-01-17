@@ -16,6 +16,7 @@ extern controller con;
 
 // Analog sensors
 extern inertial imu;
+extern gps gps_sensor;
 extern vex::optical cata_watcher;
 extern vex::distance intake_watcher;
 

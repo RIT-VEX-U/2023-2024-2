@@ -11,6 +11,7 @@ using namespace vex;
 
 // Analog sensors
 inertial imu(PORT4);
+gps gps_sensor(PORT8, 0, 0, distanceUnits::in, 0, turnType::left);
 
 // ================ OUTPUTS ================
 // Motors
@@ -202,14 +203,15 @@ void robot_init()
 
     pages = {
         new AutoChooser({"Auto 1", "Auto 2", "Auto 3", "Auto 4"}),
-        new screen::StatsPage(motor_names),
         new screen::OdometryPage(odom, 12, 12, true),
         cata_sys.Page(),
+        new screen::StatsPage(motor_names),
     };
 
     screen::start_screen(Brain.Screen, pages, 2);
     imu.calibrate();
     left_climb.set(false);
     right_climb.set(false);
-    // gps_sensor.calibrate();
+
+    gps_sensor.calibrate();
 }
