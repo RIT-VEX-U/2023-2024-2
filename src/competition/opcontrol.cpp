@@ -57,6 +57,9 @@ void opcontrol()
     // -- R1 IN
     // -- R2 OUT
     // -- B - 2 intake pistons
+    // Climb - Down
+    // Auto match load - Up
+    // Turn - A (Right), Left (Left)
 
     // SUBJECT TO CHANGE!
     // Wings: DOWN
@@ -80,8 +83,40 @@ void opcontrol()
         right_wing.set(wing_isdown); 
     });
 
-    con.ButtonA.pressed([]() { enable_matchload = !enable_matchload; });
+    con.ButtonUp.pressed([]() { enable_matchload = !enable_matchload; });
     pose_t start_pose = { .x = 16, .y = 144 - 16, .rot = 135 };
+
+    static std::atomic<bool> disable_drive(false);
+
+    con.ButtonA.pressed([](){
+        // Turn Right
+        disable_drive = true;
+        right_motors.spin(directionType::rev, 5, volt);
+        left_motors.spin(directionType::fwd, 3, volt);
+        vexDelay(150);
+        right_motors.stop(brakeType::hold);
+        left_motors.stop(brakeType::hold);
+        disable_drive = false;
+        
+    });
+
+    con.ButtonLeft.pressed([](){
+        // Turn Left
+        disable_drive = true;
+        right_motors.spin(directionType::fwd, 3, volt);
+        left_motors.spin(directionType::rev, 5, volt);
+        vexDelay(150);
+        right_motors.stop(brakeType::hold);
+        left_motors.stop(brakeType::hold);
+        disable_drive = false;
+    });
+
+    con.ButtonDown.pressed([](){
+        // Climb
+        static bool isUp = false;
+        left_climb.set(isUp = !isUp);
+        right_climb.set(isUp);
+    }); 
 
     // CommandController cc{
     //     new RepeatUntil(
@@ -112,13 +147,15 @@ void opcontrol()
 #ifdef Tank
         double l = con.Axis3.position() / 100.0;
         double r = con.Axis2.position() / 100.0;
-        drive_sys.drive_tank(l, r, 1, TankDrive::BrakeType::None);
+        if(!disable_drive)
+            drive_sys.drive_tank(l, r, 1, TankDrive::BrakeType::None);
 
 #else
 
         double f = con.Axis3.position() / 100.0;
         double s = con.Axis1.position() / 100.0;
-        drive_sys.drive_arcade(f, s, 1, TankDrive::BrakeType::None);
+        if(!disable_drive)
+            drive_sys.drive_arcade(f, s, 1, TankDrive::BrakeType::None);
 #endif
 
         // tuning();

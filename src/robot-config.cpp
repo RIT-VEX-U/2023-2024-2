@@ -115,6 +115,9 @@ vex::pot cata_pot(Brain.ThreeWirePort.H);
 vex::digital_out left_wing(Brain.ThreeWirePort.G); // Check if swapped
 vex::digital_out right_wing(Brain.ThreeWirePort.F);
 
+vex::digital_out left_climb(Brain.ThreeWirePort.A);
+vex::digital_out right_climb(Brain.ThreeWirePort.B);
+
 CataSys cata_sys(intake_watcher, cata_pot, cata_watcher, cata_motors, intake_roller, intake_combine);
 
 #else
@@ -206,5 +209,7 @@ void robot_init()
 
     screen::start_screen(Brain.Screen, pages, 2);
     imu.calibrate();
+    left_climb.set(false);
+    right_climb.set(false);
     // gps_sensor.calibrate();
 }

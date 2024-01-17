@@ -24,6 +24,7 @@ extern vex::distance intake_watcher;
 extern motor intake_combine;
 extern motor intake_roller;
 
+extern motor_group left_motors, right_motors;
 extern motor_group cata_motors;
 
 // ================ SUBSYSTEMS ================
@@ -37,6 +38,9 @@ extern MotionController drive_mc;
 extern CataSys cata_sys;
 extern vex::digital_out left_wing;
 extern vex::digital_out right_wing;
+
+extern vex::digital_out left_climb;
+extern vex::digital_out right_climb;
 
 
 #else
