@@ -119,7 +119,7 @@ void skills()
             drive_sys.DriveForwardCmd(8, FWD, 0.5)->withTimeout(1),
             
         }, new FunctionCondition([](){return false;})))
-            ->withTimeout(48),
+            ->withTimeout(5),
 
         // Last preload
         drive_sys.DriveToPointCmd({.x=18, .y=126}, FWD, 0.5)->withTimeout(1),
@@ -164,14 +164,12 @@ void skills()
         // drive_sys.DriveForwardCmd(18, FWD, 0.5)->withTimeout(1),
         // drive_sys.DriveForwardCmd(48, REV, 0.8)->withTimeout(1),
 
-        tempend,
-
         // drive_sys.PurePursuitCmd(PurePursuit::Path({
         //     {.x=0, .y=0},
         // }, 8), FWD, 0.3),
 
         //Wall Align
-        drive_sys.TurnToHeadingCmd(90, 0.5),
+        drive_sys.TurnToHeadingCmd(90, 0.5)->withTimeout(1),
         drive_sys.DriveForwardCmd(100, FWD, 0.25)->withTimeout(3),
         cata_sys.Outtake(),
         drive_sys.TurnDegreesCmd(90, .5)->withTimeout(1),
