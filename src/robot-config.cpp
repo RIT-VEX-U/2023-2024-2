@@ -111,7 +111,7 @@ vex::distance intake_watcher(vex::PORT3);
 vex::optical cata_watcher(vex::PORT15);
 vex::pot cata_pot(Brain.ThreeWirePort.H);
 
-// VISION PORT
+// VISION PORT 6
 
 vex::digital_out left_wing(Brain.ThreeWirePort.G); // Check if swapped
 vex::digital_out right_wing(Brain.ThreeWirePort.F);
