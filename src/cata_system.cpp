@@ -329,3 +329,11 @@ AutoCommand* CataSys::StopIntake()
         return true;
     });
 }
+
+AutoCommand *CataSys::IntakeToHold()
+{
+    return new FunctionCommand([&](){
+        send_command(Command::IntakeHold);
+        return true;
+    });
+}

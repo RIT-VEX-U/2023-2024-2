@@ -39,9 +39,8 @@
 			"includePath": [
 				"${vex_sdkIncludes}"
 			],
-			"compilerPath": "",
 			"cStandard": "gnu99",
-			"cppStandard": "gnu++11",
+			"cppStandard": "gnu++20",
 			"intelliSenseMode": "linux-clang-x86"
 		}
 	],

@@ -1,6 +1,7 @@
 #pragma once
 
-void supportAuto();
+void scoreAutoAWP();
+void scoreAutoFull();
 void skills();
 
 

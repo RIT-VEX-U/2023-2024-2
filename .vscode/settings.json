@@ -44,5 +44,7 @@
 		"system_error": "cpp",
 		"random": "cpp"
 	},
-	"ros.distro": "noetic"
+	"ros.distro": "noetic",
+	"C_Cpp.default.compilerPath": "/usr/bin/arm-none-eabi-g++",
+	"C_Cpp.intelliSenseEngineFallback": "disabled"
 }

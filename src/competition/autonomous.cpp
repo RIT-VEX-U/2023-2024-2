@@ -1,6 +1,7 @@
 #include "competition/autonomous.h"
 #include "robot-config.h"
 #include "core.h"
+#include "automation.h"
 #include <functional>
 
 #define FWD vex::directionType::fwd
@@ -49,7 +50,7 @@ class WingCmd : public AutoCommand
 void autonomous()
 {
     while(imu.isCalibrating() || gps_sensor.isCalibrating()){vexDelay(100);}
-    supportAuto();
+    scoreAutoAWP();
 }
 
 FunctionCommand* gps_reset()
@@ -95,17 +96,12 @@ FunctionCommand* gps_reset()
     });
 }
 
-FunctionCommand* intake_to_hold()
+class DebugCommand : public AutoCommand
 {
-    return new FunctionCommand([](){
-        cata_sys.send_command(CataSys::Command::IntakeHold);
-        return true;
-    });
-}
+    public:
 
-void supportAuto()
-{
-    FunctionCommand *tempend = new FunctionCommand([](){
+    bool run() override
+    {
         drive_sys.stop();
         cata_sys.send_command(CataSys::Command::StopIntake);
         while(true)
@@ -123,7 +119,12 @@ void supportAuto()
             vexDelay(100);
         }
         return false;
-    });    
+    }
+};
+
+void scoreAutoAWP()
+{
+    DebugCommand *tempend = new DebugCommand();
 
     CommandController cmd{
         odom.SetPositionCmd({.x=54, .y=15, .rot=0}),
@@ -132,7 +133,7 @@ void supportAuto()
             new WaitUntilCondition(new FunctionCondition([](){
                 return odom.get_position().x > 64;
             })),
-            intake_to_hold(),
+            cata_sys.IntakeToHold(),
         }),
     
         // Drive to goal
@@ -158,7 +159,7 @@ void supportAuto()
             {.x=114, .y=26}
         }, 8), REV, 0.4),
         drive_sys.TurnToHeadingCmd(310, 0.4),
-        intake_to_hold(),
+        cata_sys.IntakeToHold(),
         drive_sys.DriveForwardCmd(12, FWD, 0.4)->withTimeout(.7),
         cata_sys.WaitForIntake()->withTimeout(3),
         drive_sys.DriveForwardCmd(4, REV, 0.4),
@@ -188,6 +189,138 @@ void supportAuto()
 
     cmd.run();
     
+}
+
+AutoCommand *scoreFromMiddle()
+{
+    return new InOrder{
+        // grab from bar
+        drive_sys.TurnToHeadingCmd(0, 0.4),
+        cata_sys.IntakeToHold(), 
+        (new VisionTrackTriballCommand())->withTimeout(3),
+        drive_sys.DriveForwardCmd(0, REV, 0.4),
+
+        // Score in goal
+        drive_sys.TurnToHeadingCmd(0, 0.4),
+        drive_sys.DriveToPointCmd({.x=0, .y=0}, REV, 0.4),
+        drive_sys.TurnToHeadingCmd(0, 0.4),
+        cata_sys.Outtake(),
+        drive_sys.DriveForwardCmd(0, FWD, 0.6)->withTimeout(1), 
+
+        // Reverse & localize
+        drive_sys.DriveForwardCmd(0, REV, 0.4),
+        gps_reset(),
+
+        // drive to a neutral position
+        drive_sys.TurnToHeadingCmd(0, 0.4),
+        drive_sys.DriveToPointCmd({.x=0, .y=0}, REV, 0.4),
+        drive_sys.TurnToHeadingCmd(0, 0.4),
+
+    };
+}
+
+void scoreAutoFull()
+{
+    DebugCommand *tempend = new DebugCommand();
+
+    // Create an object command that can be called at any point
+    InOrder *touch_bar = new InOrder{
+        drive_sys.TurnToHeadingCmd(0, 0.4),
+        // Grab odometry's current position to init pure pursuit
+        new FunctionCommand([](){
+            pose_t robot_pos = odom.get_position();
+            CommandController cmd {
+                drive_sys.PurePursuitCmd(PurePursuit::Path({
+                    {robot_pos.x, robot_pos.y},
+                    {0, 0},
+                    {0, 0}
+                }, 8), FWD, 0.4)
+            };
+            cmd.run();
+            return true;
+        }),
+
+        // After getting in position, turn & touch the bar
+        drive_sys.TurnToHeadingCmd(0, 0.3),
+        drive_sys.DriveForwardCmd(0, FWD, 0.3),
+    };
+
+    CommandController cmd{
+        odom.SetPositionCmd({.x=54, .y=15, .rot=0}),
+        // Collect Ball (after delay)
+        new Async(new InOrder{
+            new WaitUntilCondition(new FunctionCondition([](){
+                return odom.get_position().x > 64;
+            })),
+            cata_sys.IntakeToHold(),
+        }),
+    
+        // Drive to goal
+        drive_sys.PurePursuitCmd(PurePursuit::Path({
+            {.x=54, .y=15},
+            {.x=97, .y=17},
+            {.x=120, .y=28},
+            {.x=127, .y=38},
+        }, 8), directionType::fwd, 0.4),
+        drive_sys.TurnToHeadingCmd(90, 0.4),
+        cata_sys.Outtake(),
+        new DelayCommand(500),
+        drive_sys.DriveForwardCmd(10, FWD, 0.8)->withTimeout(1),
+        cata_sys.StopIntake(),
+        gps_reset(), // 126, 39, 90 ish
+
+        // Back up & get alliance ball
+        // TODO use vision? prob not since its not green
+        // drive_sys.DriveToPointCmd({.x=117, .y=22.6}, REV, 0.4),
+        drive_sys.PurePursuitCmd(PurePursuit::Path({
+            {.x=126, .y=39},
+            {.x=125, .y=32},
+            {.x=114, .y=26}
+        }, 8), REV, 0.4),
+        drive_sys.TurnToHeadingCmd(310, 0.4),
+        cata_sys.IntakeToHold(),
+        drive_sys.DriveForwardCmd(12, FWD, 0.4)->withTimeout(.7),
+        cata_sys.WaitForIntake()->withTimeout(3),
+        drive_sys.DriveForwardCmd(4, REV, 0.4),
+        
+        // Score alliance ball
+        drive_sys.TurnToHeadingCmd(61, 0.4),
+        drive_sys.DriveToPointCmd({.x=124, .y=35}, FWD, .4),
+        drive_sys.TurnToHeadingCmd(90, 0.4),
+        cata_sys.Outtake(),
+        new DelayCommand(500),
+        drive_sys.DriveForwardCmd(10, FWD, 0.8)->withTimeout(1),
+        cata_sys.StopIntake(),
+        drive_sys.DriveForwardCmd(8, REV, 0.4)->withTimeout(1),
+        gps_reset(),
+
+        tempend,
+
+        // BEGIN UNTESTED
+        
+        // grab from center (closest to goal)
+        drive_sys.TurnToHeadingCmd(0, 0.4),
+        new Branch {
+            new VisionObjectExists(), // Maybe add filter for left/right limits?
+            new InOrder { // Object exists, go get 'em!
+
+            },
+            new InOrder{ // Object doesn't exist, big sad
+                drive_sys.TurnToHeadingCmd(0, 0.4)
+            }
+        },
+
+        // Score
+
+        // grab from center (furthest from goal)
+
+        // Score
+
+        // grab from bar (closest)
+
+    };
+
+    cmd.run();
 }
 
 void skills()

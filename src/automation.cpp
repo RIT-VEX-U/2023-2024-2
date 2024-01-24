@@ -8,6 +8,17 @@
 // ================ Autonomous Abstractions ================
 
 // VISION TRACKING
+vision_filter_s default_vision_filter = {
+    .min_area = 500,
+    .aspect_low = 0.8,
+    .aspect_high = 1.2,
+
+    .min_x = 0,
+    .max_x = 320,
+    .min_y = 0,
+    .max_y = 240,
+};
+
 FeedForward::ff_config_t angle_ff_cfg {
 
 };
@@ -15,28 +26,20 @@ PID::pid_config_t angle_pid_cfg {
 
 };
 
-VisionTrackTriballCommand::VisionTrackTriballCommand(): angle_fb(angle_pid_cfg, angle_ff_cfg)
+VisionTrackTriballCommand::VisionTrackTriballCommand(vision_filter_s &filter)
+: angle_fb(angle_pid_cfg, angle_ff_cfg), filter(filter)
 {}
 
 bool VisionTrackTriballCommand::run()
 {
     static const int center_x = 160;
-    static const int min_area = 500;
-
-    static const double aspect_low = 0.8;
-    static const double aspect_high = 1.2;
-
-    static const double min_x = 0;
-    static const double max_x = 320;
-    static const double min_y = 0;
-    static const double max_y = 240;
-
-    static const double max_drive_speed =0;// 0.3;
+    static const double max_drive_speed = 0;// 0.3;
     static const double max_angle_speed = 0.3;
     static const double area_speed_scalar = 1.0 / 500.0; // Drive pct over area
 
-    cam.takeSnapshot(TRIBALL);
-    if(cam.objectCount < 1)
+    std::vector<vision::object> sensed_obj = vision_run_filter(TRIBALL);
+
+    if(sensed_obj.size() <= 0)
     {
         // Stop & wait if there isn't anything sensed
         drive_sys.stop();
@@ -50,33 +53,12 @@ bool VisionTrackTriballCommand::run()
         return true;
     }
 
-    vision::object &sensed = cam.objects[0];
+    // Get the largest object sensed
     vision::object largest;
-
-    // Go through all sensed objects
-    for(int i = 0; i < cam.objectCount; i++)
+    for(vision::object &obj : sensed_obj)
     {
-        vision::object &cur_obj = cam.objects[i];
-
-        // Filtering by size, aspect ratio & location in frame
-        int area = cur_obj.width * cur_obj.height;
-        double aspect_ratio = cur_obj.width / cur_obj.height;
-        int x = cur_obj.centerX;
-        int y = cur_obj.centerY;
-
-        // keep searching if filtered
-        if (area < 1000 
-            || aspect_ratio < aspect_low || aspect_ratio > aspect_high
-            || x < min_x || x > max_x || y < min_y || y > max_y)
-        {
-            continue;
-        }
-
-        // If this object is bigger, copy the data to 'largest'
-        if (area > (largest.width * largest.height))
-        {
-            largest = cur_obj;
-        }
+        if((obj.width * obj.height) > (largest.width * largest.height))
+            largest = obj;
     }
 
     double object_area = largest.width * largest.height;
@@ -95,6 +77,45 @@ bool VisionTrackTriballCommand::run()
     return false;
 }
 
+std::vector<vision::object> vision_run_filter(vision::signature &sig, vision_filter_s &filter)
+{
+    cam.takeSnapshot(TRIBALL);
+    vision::object &sensed = cam.objects[0];
+    std::vector<vision::object> out;
+
+    // Go through all sensed objects
+    for(int i = 0; i < cam.objectCount; i++)
+    {
+        vision::object &cur_obj = cam.objects[i];
+
+        // Filtering by size, aspect ratio & location in frame
+        int area = cur_obj.width * cur_obj.height;
+        double aspect_ratio = cur_obj.width / cur_obj.height;
+        int x = cur_obj.centerX;
+        int y = cur_obj.centerY;
+
+        // keep searching if filtered
+        if (area < filter.min_area
+            || aspect_ratio < filter.aspect_low || aspect_ratio > filter.aspect_high
+            || x < filter.min_x || x > filter.max_x || y < filter.min_y || y > filter.max_y)
+        {
+            continue;
+        }
+
+        out.push_back(cur_obj);
+    }
+    
+    return out;
+}
+
+VisionObjectExists::VisionObjectExists(vision_filter_s &filter)
+: filter(filter)
+{}
+
+bool VisionObjectExists::test()
+{
+    return vision_run_filter(TRIBALL, this->filter).size() > 0;
+}
 
 // ================ Driver Assist Automations ================
 
