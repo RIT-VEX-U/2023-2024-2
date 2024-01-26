@@ -297,15 +297,32 @@ void scoreAutoFull()
         tempend,
 
         // BEGIN UNTESTED
+
+        // Drive into position
+        drive_sys.TurnToHeadingCmd(0, 0.4),
+        drive_sys.PurePursuitCmd(PurePursuit::Path({
+            {.x=0, .y=0},
+            {.x=0, .y=0},
+            {.x=0, .y=0},
+        }, 8), FWD, 0.4),
         
         // grab from center (closest to goal)
+        // TODO make sure we don't cross the line! (Async command?)
         drive_sys.TurnToHeadingCmd(0, 0.4),
         new Branch {
             new VisionObjectExists(), // Maybe add filter for left/right limits?
             new InOrder { // Object exists, go get 'em!
+                new VisionTrackTriballCommand(),
+                // Back up & score
+                drive_sys.DriveToPointCmd({.x=0, .y=0}, REV, 0.4),
+                drive_sys.TurnToHeadingCmd(0, 0.4),
+                drive_sys.DriveToPointCmd({.x=0, .y=0}, FWD, 0.4),
+                cata_sys.Outtake(),
+                drive_sys.DriveForwardCmd(0, FWD, 0.6)->withTimeout(1),
+                cata_sys.StopIntake()
 
             },
-            new InOrder{ // Object doesn't exist, big sad
+            new InOrder{ // Object doesn't exist, big sad (turn & continue on)
                 drive_sys.TurnToHeadingCmd(0, 0.4)
             }
         },

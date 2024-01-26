@@ -9,9 +9,9 @@
 
 // VISION TRACKING
 vision_filter_s default_vision_filter = {
-    .min_area = 500,
+    .min_area = 300,
     .aspect_low = 0.8,
-    .aspect_high = 1.2,
+    .aspect_high = 2.5,
 
     .min_x = 0,
     .max_x = 320,
@@ -23,7 +23,8 @@ FeedForward::ff_config_t angle_ff_cfg {
 
 };
 PID::pid_config_t angle_pid_cfg {
-
+    .p = 0.004,
+    .d = 0.0005
 };
 
 VisionTrackTriballCommand::VisionTrackTriballCommand(vision_filter_s &filter)
@@ -33,9 +34,11 @@ VisionTrackTriballCommand::VisionTrackTriballCommand(vision_filter_s &filter)
 bool VisionTrackTriballCommand::run()
 {
     static const int center_x = 160;
-    static const double max_drive_speed = 0;// 0.3;
+    static const double min_drive_speed = 0.1;
+    static const double max_drive_speed = 0.5;
+    
     static const double max_angle_speed = 0.3;
-    static const double area_speed_scalar = 1.0 / 500.0; // Drive pct over area
+    static const double area_speed_scalar = 50000; // Area at which speed is zero
 
     std::vector<vision::object> sensed_obj = vision_run_filter(TRIBALL);
 
@@ -46,12 +49,12 @@ bool VisionTrackTriballCommand::run()
         return false;
     }
 
-    if(intake_watcher.objectDistance(distanceUnits::mm) < 100)
-    {
-        // Done when triball is in the intake
-        drive_sys.stop();
-        return true;
-    }
+    // if(intake_watcher.objectDistance(distanceUnits::mm) < 100)
+    // {
+    //     // Done when triball is in the intake
+    //     drive_sys.stop();
+    //     return true;
+    // }
 
     // Get the largest object sensed
     vision::object largest;
@@ -70,9 +73,10 @@ bool VisionTrackTriballCommand::run()
     // Slow down as size of object increases (big area = small speed)
     // TODO test this
     // double speed = clamp(1-(area_speed_scalar * object_area), 0, max_drive_speed);
-    double speed = max_drive_speed;
-
-    drive_sys.drive_tank_raw(speed - angle_fb.get(), speed + angle_fb.get());
+    double speed = clamp(lerp(1, 0, object_area / area_speed_scalar), 0, 1) * max_drive_speed + min_drive_speed;
+    // double speed = max_drive_speed;
+    printf("x: %d\n", largest.centerX);
+    drive_sys.drive_tank_raw(speed + angle_fb.get(), speed - angle_fb.get());
 
     return false;
 }
@@ -104,6 +108,12 @@ std::vector<vision::object> vision_run_filter(vision::signature &sig, vision_fil
 
         out.push_back(cur_obj);
     }
+
+    // Only for debugging
+    printf("X: %d, Y: %d, A: %d, Ratio: %f\n", 
+        cam.largestObject.centerX, cam.largestObject.centerY, 
+        cam.largestObject.width * cam.largestObject.height,
+        (double)cam.largestObject.width / (double)cam.largestObject.height);
     
     return out;
 }

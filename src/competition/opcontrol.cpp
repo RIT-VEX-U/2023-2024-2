@@ -63,7 +63,7 @@ void opcontrol()
 
     // SUBJECT TO CHANGE!
     // Wings: DOWN
-#ifdef COMP_BOT
+
     con.ButtonL2.pressed([]() { cata_sys.send_command(CataSys::Command::StartFiring); });
     con.ButtonL2.released([]() { cata_sys.send_command(CataSys::Command::StopFiring); });
 
@@ -118,30 +118,6 @@ void opcontrol()
         right_climb.set(isUp);
     }); 
 
-    // CommandController cc{
-    //     new RepeatUntil(
-    //         {
-    //             odom.SetPositionCmd(start_pose),
-    //             cata_sys.IntakeFully(),
-    //             drive_sys.DriveForwardCmd(4, directionType::rev),
-    //             cata_sys.Fire(),
-    //             drive_sys.DriveForwardCmd(4, directionType::fwd),
-
-    //         },
-    //         10),
-    //     // drive_sys.DriveForwardCmd(36, vex::directionType::rev, 0.9),
-    //     // drive_sys.TurnToHeadingCmd(-90),
-    //     // drive_sys.DriveToPointCmd({.x = 27, .y = 18}, vex::fwd)
-    // };
-    // cc.add_cancel_func([]()
-    //                    { return con.ButtonA.pressing(); });
-    // cc.run();
-    // while(true){
-    // vexDelay(1000);
-    // }
-    // return;
-
-#endif
   // ================ INIT ================
     while (true) {
 #ifdef Tank
@@ -162,7 +138,11 @@ void opcontrol()
 
         matchload_1([&](){ return enable_matchload;}); // Toggle
 
-        printf("x: %f\n", gps_sensor.xPosition(distanceUnits::in));
+        // printf("x: %f\n", gps_sensor.xPosition(distanceUnits::in));
+        static VisionTrackTriballCommand viscmd;
+
+        if(con.ButtonB.pressing())
+            viscmd.run();
 
         // if (gps_sensor.quality() > 95)
         // {

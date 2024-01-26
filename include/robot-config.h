@@ -2,66 +2,58 @@
 #include "vex.h"
 #include "core.h"
 #include "cata_system.h"
-#define COMP_BOT
 
 using namespace vex;
 
 extern brain Brain;
 extern controller con;
 
-#ifdef COMP_BOT
-
-// ================ INPUTS ================
-// Digital sensors
-
-// Analog sensors
 extern inertial imu;
 extern gps gps_sensor;
-extern vex::optical cata_watcher;
 extern vex::distance intake_watcher;
+extern optical cata_watcher;
+extern pot cata_pot;
 
 // ================ OUTPUTS ================
 // Motors
+extern motor left_front_front;
+extern motor lft_front_back;
+extern motor left_back_front;
+extern motor left_back_back;
+
+extern motor right_front_front;
+extern motor right_front_back;
+extern motor right_back_front;
+extern motor right_back_back;
+
 extern motor intake_combine;
 extern motor intake_roller;
 
-extern motor_group left_motors, right_motors;
-extern motor_group cata_motors;
+extern motor cata_r;
+extern motor cata_l;
 
 // ================ SUBSYSTEMS ================
-extern robot_specs_t robot_cfg;
 extern OdometryTank odom;
 extern TankDrive drive_sys;
-
-// extern MotionController turn_mc;
-extern MotionController drive_mc;
 
 extern CataSys cata_sys;
-extern vex::digital_out left_wing;
-extern vex::digital_out right_wing;
+extern digital_out left_wing;
+extern digital_out right_wing;
 
-extern vex::digital_out left_climb;
-extern vex::digital_out right_climb;
+extern digital_out left_climb;
+extern digital_out right_climb;
 
+extern motor_group left_motors;
+extern motor_group right_motors;
 
-#else
-// ================ INPUTS ================
-// Digital sensors
+extern motor_group intake_motors;
+extern motor_group cata_motors;
 
-// Analog sensors
-extern inertial imu;
-extern gps gps_sensor;
-
-
-// ================ OUTPUTS ================
-// Motors
-extern motor intake_combine;
-extern motor intake_roller;
-
-// ================ SUBSYSTEMS ================
+extern robot_specs_t robot_cfg;
+extern MotionController drive_mc;
 extern OdometryTank odom;
 extern TankDrive drive_sys;
-#endif
+extern CataSys cata_sys;
 
 // ================ UTILS ================
 
