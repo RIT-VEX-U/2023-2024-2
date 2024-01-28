@@ -131,9 +131,9 @@ MotionController::m_profile_cfg_t drive_mc_cfg{
     .accel = 190.225,
     .pid_cfg = drive_pid_cfg,
     .ff_cfg = FeedForward::ff_config_t{
-        .kA = 0.0029,
-        .kV = 0.0131,
         .kS = 0.05,
+        .kV = 0.0131,
+        .kA = 0.0029,
         .kG = 0,
     }
 };

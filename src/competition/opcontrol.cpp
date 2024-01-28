@@ -3,6 +3,7 @@
 #include "automation.h"
 #include "robot-config.h"
 #include "vex.h"
+#include "vision.h"
 #include <atomic>
 
 #define Tank
@@ -141,8 +142,21 @@ void opcontrol()
         // printf("x: %f\n", gps_sensor.xPosition(distanceUnits::in));
         static VisionTrackTriballCommand viscmd;
 
-        if(con.ButtonB.pressing())
-            viscmd.run();
+        // if(con.ButtonB.pressing())
+        // {
+        //     if(intake_watcher.objectDistance(distanceUnits::mm) > 100.0)
+        //         viscmd.run();
+        //     else
+        //         drive_sys.stop();
+
+        //     cata_sys.send_command(CataSys::Command::IntakeHold);
+        // }
+
+        cam.takeSnapshot(TRIBALL);
+        printf("I: %f, N: %d, X: %d, Y: %d, A: %d, Ratio: %f\n", intake_watcher.objectDistance(distanceUnits::mm), cam.objectCount,
+            cam.largestObject.centerX, cam.largestObject.centerY, 
+            cam.largestObject.width * cam.largestObject.height,
+            (double)cam.largestObject.width / (double)cam.largestObject.height);
 
         // if (gps_sensor.quality() > 95)
         // {

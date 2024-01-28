@@ -1,6 +1,7 @@
 #include "automation.h"
 #include "robot-config.h"
 #include "vision.h"
+#include "../core/include/utils/geometry.h"
 
 #define FWD vex::directionType::fwd
 #define REV vex::directionType::rev
@@ -11,7 +12,7 @@
 vision_filter_s default_vision_filter = {
     .min_area = 300,
     .aspect_low = 0.8,
-    .aspect_high = 2.5,
+    .aspect_high = 4,
 
     .min_x = 0,
     .max_x = 320,
@@ -35,7 +36,7 @@ bool VisionTrackTriballCommand::run()
 {
     static const int center_x = 160;
     static const double min_drive_speed = 0.1;
-    static const double max_drive_speed = 0.5;
+    static const double max_drive_speed = 0.3;
     
     static const double max_angle_speed = 0.3;
     static const double area_speed_scalar = 50000; // Area at which speed is zero
@@ -110,10 +111,7 @@ std::vector<vision::object> vision_run_filter(vision::signature &sig, vision_fil
     }
 
     // Only for debugging
-    printf("X: %d, Y: %d, A: %d, Ratio: %f\n", 
-        cam.largestObject.centerX, cam.largestObject.centerY, 
-        cam.largestObject.width * cam.largestObject.height,
-        (double)cam.largestObject.width / (double)cam.largestObject.height);
+    
     
     return out;
 }
@@ -125,6 +123,41 @@ VisionObjectExists::VisionObjectExists(vision_filter_s &filter)
 bool VisionObjectExists::test()
 {
     return vision_run_filter(TRIBALL, this->filter).size() > 0;
+}
+
+point_t estimate_triball_pos(vision::object &obj)
+{
+    pose_t robot_pose = odom.get_position();
+
+    double area = obj.width * obj.height;
+    double x = 0; // TODO find formulae from spreadsheet
+    double y = 0; 
+
+    // In reference to the camera
+    point_t local_pos = {.x=x, .y=y};
+
+    // Rotate in reference to the robot's heading
+    point_t field_pos = (Mat2::FromRotationDegrees(robot_pose.rot) * local_pos) + robot_pose.get_point();
+    
+    return field_pos;
+}
+
+IsTriballInArea::IsTriballInArea(point_t pos, int radius, vision_filter_s &filter)
+: filter(filter), pos(pos), radius(radius) {}
+
+bool IsTriballInArea::test()
+{
+    std::vector<vision::object> objs = vision_run_filter(TRIBALL, filter);
+
+    // Run through all objects sensed & return true if any is within a certain distance
+    for (int i=0; i<objs.size(); i++)
+    {
+        point_t obj_pos = estimate_triball_pos(objs[i]);
+        if (fabs(obj_pos.dist(pos)) <= radius)
+            return true;
+    }
+
+    return false;
 }
 
 // ================ Driver Assist Automations ================

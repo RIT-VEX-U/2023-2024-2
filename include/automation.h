@@ -42,6 +42,20 @@ class VisionObjectExists: public Condition
 
 std::vector<vision::object> vision_run_filter(vision::signature &sig, vision_filter_s &filter=default_vision_filter);
 
+point_t estimate_triball_pos(vision::object &obj);
+
+class IsTriballInArea : public Condition
+{
+    public:
+    IsTriballInArea(point_t pos, int radius, vision_filter_s &filter=default_vision_filter);
+    bool test() override;
+
+    private:
+    vision_filter_s &filter;
+    point_t pos;
+    int radius;
+};
+
 // ================ Driver Assist Automations ================
 void matchload_1(bool &enable);
 void matchload_1(std::function<bool()> enable);
