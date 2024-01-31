@@ -96,6 +96,8 @@ void opcontrol()
         vexDelay(150);
         right_motors.stop(brakeType::hold);
         left_motors.stop(brakeType::hold);
+        right_motors.stop(brakeType::coast);
+        left_motors.stop(brakeType::coast);
         disable_drive = false;
         
     });

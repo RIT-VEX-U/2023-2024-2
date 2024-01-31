@@ -87,8 +87,13 @@ int thread_func(void* void_cata) {
                 // Intake until ball is sensed in intake, then stop
                 // timer to make sure it doesn't go straight through
                 if (ball_in_intake) {
-                    cata.intake_upper.stop(brakeType::hold);
-                    cata.intake_lower.stop(brakeType::hold);
+                    vex::timer timer;
+                    timer.reset();
+
+                    if(timer.value() >= .25){
+                        cata.intake_upper.stop(brakeType::hold);
+                        cata.intake_lower.stop(brakeType::hold);
+                    }
                 }
                 else {
                     cata.intake_upper.spin(vex::fwd, intake_upper_volt_hold, vex::volt);
