@@ -51,19 +51,18 @@ void opcontrol()
     right_wing.set(false);
 
     // Controls:
-    // Cata: Hold L1 (Not on rising edge)
-    // -- Don't shoot until there's a ball
-    // -- Preload
+    // Catapult:
+    // -- L2 - Fire (Don't if ball isn't detected)
     // Intake:
-    // -- R1 IN
-    // -- R2 OUT
-    // -- B - 2 intake pistons
-    // Climb - Down
-    // Auto match load - Up
-    // Turn - A (Right), Left (Left)
-
-    // SUBJECT TO CHANGE!
-    // Wings: DOWN
+    // -- L1 - Intake & Hold 
+    // -- R1 - In
+    // -- R2 - Out
+    // Misc:
+    // -- B - both wings (toggle)
+    // -- Down - Climb Pistons (Single deploy)
+    // -- Up - Auto match load
+    // -- A - quick turn (Right)
+    // -- Left - quick turn (Left)
 
     con.ButtonL2.pressed([]() { cata_sys.send_command(CataSys::Command::StartFiring); });
     con.ButtonL2.released([]() { cata_sys.send_command(CataSys::Command::StopFiring); });
@@ -152,7 +151,15 @@ void opcontrol()
         //     cata_sys.send_command(CataSys::Command::IntakeHold);
         // }
 
+        if (con.ButtonY.pressing())
+        {
+            static FunctionCommand* reset_gps_cmd = gps_reset();
+            reset_gps_cmd->run();
+        }
+
+
         cam.takeSnapshot(TRIBALL);
+        estimate_triball_pos(cam.largestObject);
         printf("I: %f, N: %d, X: %d, Y: %d, A: %d, Ratio: %f\n", intake_watcher.objectDistance(distanceUnits::mm), cam.objectCount,
             cam.largestObject.centerX, cam.largestObject.centerY, 
             cam.largestObject.width * cam.largestObject.height,

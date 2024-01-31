@@ -1,4 +1,7 @@
 #pragma once
+#include "core.h"
+
+FunctionCommand* gps_reset();
 
 void scoreAutoAWP();
 void scoreAutoFull();

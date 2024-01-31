@@ -130,15 +130,17 @@ point_t estimate_triball_pos(vision::object &obj)
     pose_t robot_pose = odom.get_position();
 
     double area = obj.width * obj.height;
-    double x = 0; // TODO find formulae from spreadsheet
-    double y = 0; 
+    double dist = 3721*pow(area, -0.634); // Estimate found by spreadsheet
+    double heading = 53.9 + (0.241*obj.centerX) + (0.0000305 * area*area); // Estimate found by spreadsheet
+    Vector2D object_vec(deg2rad(heading), dist);
 
     // In reference to the camera
-    point_t local_pos = {.x=x, .y=y};
+    point_t local_pos = object_vec.point();
+    printf("locX: %f, locY: %f, ", local_pos.x, local_pos.y);
 
     // Rotate in reference to the robot's heading
     point_t field_pos = (Mat2::FromRotationDegrees(robot_pose.rot) * local_pos) + robot_pose.get_point();
-    
+    printf("absX: %f, absY: %f\n", field_pos.x, field_pos.y);
     return field_pos;
 }
 
