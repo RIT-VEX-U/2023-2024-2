@@ -4,12 +4,12 @@
 		"json": 2
 	},
 	"project": {
-		"name": "RED_Jover",
+		"name": "BLUE_Jover",
 		"description": "",
-		"creationDate": "Wed, 31 Jan 2024 19:22:52 GMT",
+		"creationDate": "Thu, 01 Feb 2024 23:48:14 GMT",
 		"platform": "V5",
 		"language": "cpp",
-		"slot": 8,
+		"slot": 2,
 		"sdkVersion": "V5_20220726_10_00_00",
 		"cpp": {
 			"includePath": [],

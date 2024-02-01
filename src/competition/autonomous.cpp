@@ -8,7 +8,7 @@
 #define FWD vex::directionType::fwd
 #define REV vex::directionType::rev
 
-#define RED
+// #define RED
 
 enum Side
 {
@@ -65,7 +65,7 @@ FunctionCommand* gps_reset()
         t.reset();
         double x = orig.x, y= orig.y, rot = orig.rot;
         int itr = 0;
-        while(t.time(sec) < 1)
+        while(t.time(sec) < 0.5)
         {
             if(gps_sensor.quality() > 99)
             {
@@ -242,28 +242,6 @@ void scoreAutoFull()
     gps_sensor.heading(); // funky gps not reading sometimes
     DebugCommand *tempend = new DebugCommand();
 
-    // Create an object command that can be called at any point
-    InOrder *touch_bar = new InOrder{
-        drive_sys.TurnToHeadingCmd(0, 0.4),
-        // Grab odometry's current position to init pure pursuit
-        new FunctionCommand([](){
-            pose_t robot_pos = odom.get_position();
-            CommandController cmd {
-                drive_sys.PurePursuitCmd(PurePursuit::Path({
-                    {robot_pos.x, robot_pos.y},
-                    {0, 0},
-                    {0, 0}
-                }, 8), FWD, 0.4)
-            };
-            cmd.run();
-            return true;
-        }),
-
-        // After getting in position, turn & touch the bar
-        drive_sys.TurnToHeadingCmd(0, 0.3),
-        drive_sys.DriveForwardCmd(0, FWD, 0.3),
-    };
-
     CommandController cmd{
         odom.SetPositionCmd({.x=54, .y=15, .rot=0}),
         // Collect Ball (after delay)
@@ -322,7 +300,8 @@ void scoreAutoFull()
             {.x=125, .y=32},
             {.x=106, .y=35},
             {.x=106, .y=52},
-        }, 8), FWD, 0.25),
+        }, 8), FWD, 0.3),
+        drive_sys.TurnToHeadingCmd(70, 0.4),
 
         // grab from center (closest to goal)
         // TODO make sure we don't cross the line! (Async command?)
@@ -360,7 +339,7 @@ void scoreAutoFull()
         },
         new Branch {
             new VisionObjectExists(vision_filter_s{
-                    .min_area = 4500,
+                    .min_area = 3500,
                     .max_area = 100000,
                     .aspect_low = 0.5,
                     .aspect_high = 2,
@@ -389,16 +368,29 @@ void scoreAutoFull()
         drive_sys.TurnToHeadingCmd(214, 0.4),
         cata_sys.IntakeToHold(),
         new VisionTrackTriballCommand(),
-        drive_sys.TurnToHeadingCmd(17, 0.4),
-        new Async{
-            new InOrder {
-                new DelayCommand(200),
-                cata_sys.Outtake()
+        new Branch {
+            new FunctionCondition([](){return intake_watcher.objectDistance(mm) < 150;}),
+            new InOrder { // No ball detected
+                // do later, shouldn't get here
+            },
+            new InOrder { // Ball detected, score it
+                drive_sys.TurnToHeadingCmd(17, 0.4),
+                new Async{
+                    new InOrder {
+                        new DelayCommand(200),
+                        cata_sys.Outtake()
+                    }
+                },
+                drive_sys.DriveForwardCmd(40, FWD, 0.65)->withTimeout(1.5),
+                cata_sys.StopIntake(),
+                drive_sys.DriveForwardCmd(8, REV, 0.4),
+                gps_reset(),
             }
         },
-        drive_sys.DriveForwardCmd(40, FWD, 0.8)->withTimeout(2),
-        drive_sys.DriveForwardCmd(8, REV, 0.4),
-        gps_reset(),
+        // complete AWP
+        drive_sys.TurnToHeadingCmd(230, 0.4),
+        drive_sys.DriveToPointCmd({.x=99, .y=49}, FWD, 0.25)->withTimeout(3),
+        drive_sys.DriveForwardCmd(12, FWD, 0.2)->withTimeout(3),
         tempend,
 
     };

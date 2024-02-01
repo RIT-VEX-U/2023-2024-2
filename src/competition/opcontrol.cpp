@@ -37,7 +37,7 @@ void tuning()
  */
 void opcontrol()
 {
-    autonomous();
+    // autonomous();
     // vexDelay(1000);
 
     // while (imu.isCalibrating() || gps_sensor.isCalibrating())
