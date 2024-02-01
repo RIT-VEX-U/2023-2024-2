@@ -42,6 +42,7 @@ extern digital_out right_wing;
 
 extern digital_out left_climb;
 extern digital_out right_climb;
+extern digital_out vision_light;
 
 extern motor_group left_motors;
 extern motor_group right_motors;

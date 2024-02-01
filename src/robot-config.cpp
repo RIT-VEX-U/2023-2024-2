@@ -40,7 +40,9 @@ vex::digital_out left_wing(Brain.ThreeWirePort.G); // Check if swapped
 vex::digital_out right_wing(Brain.ThreeWirePort.F);
 
 vex::digital_out left_climb(Brain.ThreeWirePort.A);
-vex::digital_out right_climb(Brain.ThreeWirePort.B);
+vex::digital_out right_climb(Brain.ThreeWirePort.C);
+
+vex::digital_out vision_light(Brain.ThreeWirePort.B);
 
 #else
 // NEMO CONFIG

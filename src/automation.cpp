@@ -11,6 +11,7 @@
 // VISION TRACKING
 vision_filter_s default_vision_filter = {
     .min_area = 300,
+    .max_area = 100000,
     .aspect_low = 0.8,
     .aspect_high = 4,
 
@@ -41,7 +42,16 @@ bool VisionTrackTriballCommand::run()
     static const double max_angle_speed = 0.3;
     static const double area_speed_scalar = 50000; // Area at which speed is zero
 
+    vision_light.set(true);
     std::vector<vision::object> sensed_obj = vision_run_filter(TRIBALL);
+
+    if(intake_watcher.objectDistance(distanceUnits::mm) < 100)
+    {
+        // Done when triball is in the intake
+        drive_sys.stop();
+        vision_light.set(false);
+        return true;
+    }
 
     if(sensed_obj.size() <= 0)
     {
@@ -49,13 +59,6 @@ bool VisionTrackTriballCommand::run()
         drive_sys.stop();
         return false;
     }
-
-    // if(intake_watcher.objectDistance(distanceUnits::mm) < 100)
-    // {
-    //     // Done when triball is in the intake
-    //     drive_sys.stop();
-    //     return true;
-    // }
 
     // Get the largest object sensed
     vision::object largest;
@@ -82,10 +85,9 @@ bool VisionTrackTriballCommand::run()
     return false;
 }
 
-std::vector<vision::object> vision_run_filter(vision::signature &sig, vision_filter_s &filter)
+std::vector<vision::object> vision_run_filter(vision::signature &sig, vision_filter_s filter)
 {
-    cam.takeSnapshot(TRIBALL);
-    vision::object &sensed = cam.objects[0];
+    cam.takeSnapshot(sig);
     std::vector<vision::object> out;
 
     // Go through all sensed objects
@@ -95,12 +97,21 @@ std::vector<vision::object> vision_run_filter(vision::signature &sig, vision_fil
 
         // Filtering by size, aspect ratio & location in frame
         int area = cur_obj.width * cur_obj.height;
-        double aspect_ratio = cur_obj.width / cur_obj.height;
+        double aspect_ratio = ((double)cur_obj.width) / ((double)cur_obj.height);
         int x = cur_obj.centerX;
         int y = cur_obj.centerY;
+        // printf("areaMin %d %d %d\n", area < filter.min_area, area, filter.min_area);
+        // printf("areaMax %d %d\n", area > filter.max_area, filter.max_area);
+        // printf("ARMin %d %f %f\n", aspect_ratio < filter.aspect_low, aspect_ratio, filter.aspect_low);
+        // printf("ARMax %d %f\n", aspect_ratio > filter.aspect_high, filter.aspect_high);
+        // printf("minx %d %d %d\n", x < filter.min_x, x, filter.min_x);
+        // printf("maxx %d %d\n", x > filter.max_x, filter.max_x);
+        // printf("miny %d %d %d\n", y < filter.min_y, y, filter.min_y);
+        // printf("maxy %d %d\n", y > filter.max_y, filter.max_y);
+
 
         // keep searching if filtered
-        if (area < filter.min_area
+        if (area < filter.min_area || area > filter.max_area
             || aspect_ratio < filter.aspect_low || aspect_ratio > filter.aspect_high
             || x < filter.min_x || x > filter.max_x || y < filter.min_y || y > filter.max_y)
         {
@@ -111,12 +122,12 @@ std::vector<vision::object> vision_run_filter(vision::signature &sig, vision_fil
     }
 
     // Only for debugging
-    
+    // printf("Num: %d\n", out.size());
     
     return out;
 }
 
-VisionObjectExists::VisionObjectExists(vision_filter_s &filter)
+VisionObjectExists::VisionObjectExists(vision_filter_s filter)
 : filter(filter)
 {}
 

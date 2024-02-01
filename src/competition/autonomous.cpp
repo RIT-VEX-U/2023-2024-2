@@ -2,6 +2,7 @@
 #include "robot-config.h"
 #include "core.h"
 #include "automation.h"
+#include "vision.h"
 #include <functional>
 
 #define FWD vex::directionType::fwd
@@ -50,13 +51,14 @@ class WingCmd : public AutoCommand
 void autonomous()
 {
     while(imu.isCalibrating() || gps_sensor.isCalibrating()){vexDelay(100);}
-    scoreAutoAWP();
+    scoreAutoFull();
 }
 
 FunctionCommand* gps_reset()
 {
     return new FunctionCommand([](){
-        while(gps_sensor.xPosition() == 0.0 && gps_sensor.yPosition() == 0.0) {vexDelay(20);}
+        if (gps_sensor.xPosition() == 0.0 && gps_sensor.yPosition() == 0.0)
+            return false;
 
         pose_t orig = odom.get_position();
         static timer t;
@@ -96,6 +98,18 @@ FunctionCommand* gps_reset()
     });
 }
 
+bool light_on()
+{
+    vision_light.set(true);
+    return true;
+}
+
+bool light_off()
+{
+    vision_light.set(false);
+    return true;
+}
+
 class DebugCommand : public AutoCommand
 {
     public:
@@ -104,6 +118,7 @@ class DebugCommand : public AutoCommand
     {
         drive_sys.stop();
         cata_sys.send_command(CataSys::Command::StopIntake);
+        vision_light.set(true);
         while(true)
         {
             cata_sys.send_command(CataSys::Command::StopIntake);
@@ -111,11 +126,16 @@ class DebugCommand : public AutoCommand
             double s = con.Axis1.position() / 200.0;
             drive_sys.drive_arcade(f, s, 1, TankDrive::BrakeType::None);
             pose_t pos = odom.get_position();
-            printf("X: %.2f, Y: %.2f, R:%.2f\n", pos.x, pos.y, pos.rot);
+            printf("ODO X: %.2f, Y: %.2f, R:%.2f, ", pos.x, pos.y, pos.rot);
             printf("GPS X: %.2f, Y: %.2f, R: %.2f Q: %d\n", 
                 gps_sensor.xPosition(distanceUnits::in)+72, 
                 gps_sensor.yPosition(distanceUnits::in)+72, 
                 gps_sensor.heading(), gps_sensor.quality());
+            cam.takeSnapshot(TRIBALL);
+            printf("X: %d, Y: %d, A: %d, Ratio: %f\n", 
+                cam.largestObject.centerX, cam.largestObject.centerY, 
+                cam.largestObject.width * cam.largestObject.height,
+                (double)cam.largestObject.width / (double)cam.largestObject.height);
             vexDelay(100);
         }
         return false;
@@ -149,7 +169,6 @@ void scoreAutoAWP()
         drive_sys.DriveForwardCmd(10, FWD, 0.8)->withTimeout(1),
         cata_sys.StopIntake(),
         gps_reset(), // 126, 39, 90 ish
-        // tempend,
 
         // Back up & get alliance ball
         // drive_sys.DriveToPointCmd({.x=117, .y=22.6}, REV, 0.4),
@@ -160,7 +179,7 @@ void scoreAutoAWP()
         }, 8), REV, 0.4),
         drive_sys.TurnToHeadingCmd(310, 0.4),
         cata_sys.IntakeToHold(),
-        drive_sys.DriveForwardCmd(12, FWD, 0.4)->withTimeout(.7),
+        drive_sys.DriveForwardCmd(12, FWD, 0.25)->withTimeout(.7),
         cata_sys.WaitForIntake()->withTimeout(3),
         drive_sys.DriveForwardCmd(4, REV, 0.4),
         
@@ -172,18 +191,17 @@ void scoreAutoAWP()
         new DelayCommand(500),
         drive_sys.DriveForwardCmd(10, FWD, 0.8)->withTimeout(1),
         cata_sys.StopIntake(),
-        drive_sys.DriveForwardCmd(3, REV, 0.4)->withTimeout(1),
+        drive_sys.DriveForwardCmd(10, REV, 0.4)->withTimeout(1),
         gps_reset(),
 
         // Touch bar
-        drive_sys.DriveToPointCmd({.x=125, .y=29}, REV, .4),
-        drive_sys.TurnToHeadingCmd(216, 0.4),
+        drive_sys.TurnToHeadingCmd(224, 0.4),
         drive_sys.PurePursuitCmd(PurePursuit::Path({
-            {.x=125, .y=29},
-            {.x=105, .y=14},
-            {.x=86, .y=13}
+            {.x=124, .y=33},
+            {.x=106, .y=14},
+            {.x=80, .y=14}
         }, 8), FWD, 0.4),
-        drive_sys.TurnToHeadingCmd(141, 0.4),
+        drive_sys.TurnToHeadingCmd(140, 0.4),
         drive_sys.DriveForwardCmd(12, FWD, 0.2)->withTimeout(2),
     };
 
@@ -221,6 +239,7 @@ AutoCommand *scoreFromMiddle()
 
 void scoreAutoFull()
 {
+    gps_sensor.heading(); // funky gps not reading sometimes
     DebugCommand *tempend = new DebugCommand();
 
     // Create an object command that can be called at any point
@@ -275,7 +294,7 @@ void scoreAutoFull()
         drive_sys.PurePursuitCmd(PurePursuit::Path({
             {.x=126, .y=39},
             {.x=125, .y=32},
-            {.x=114, .y=26}
+            {.x=118, .y=26}
         }, 8), REV, 0.4),
         drive_sys.TurnToHeadingCmd(310, 0.4),
         cata_sys.IntakeToHold(),
@@ -285,55 +304,102 @@ void scoreAutoFull()
         
         // Score alliance ball
         drive_sys.TurnToHeadingCmd(61, 0.4),
-        drive_sys.DriveToPointCmd({.x=124, .y=35}, FWD, .4),
+        drive_sys.DriveForwardCmd(9, FWD, 0.4),
         drive_sys.TurnToHeadingCmd(90, 0.4),
         cata_sys.Outtake(),
         new DelayCommand(500),
-        drive_sys.DriveForwardCmd(10, FWD, 0.8)->withTimeout(1),
+        drive_sys.DriveForwardCmd(16, FWD, 0.8)->withTimeout(1),
         cata_sys.StopIntake(),
         drive_sys.DriveForwardCmd(8, REV, 0.4)->withTimeout(1),
         gps_reset(),
 
-        tempend,
-
         // BEGIN UNTESTED
 
         // Drive into position
-        drive_sys.TurnToHeadingCmd(0, 0.4),
+        drive_sys.TurnToHeadingCmd(180, 0.4),
+        new FunctionCommand(light_on),
         drive_sys.PurePursuitCmd(PurePursuit::Path({
-            {.x=0, .y=0},
-            {.x=0, .y=0},
-            {.x=0, .y=0},
-        }, 8), FWD, 0.4),
-        
+            {.x=125, .y=32},
+            {.x=106, .y=35},
+            {.x=106, .y=52},
+        }, 8), FWD, 0.25),
+
         // grab from center (closest to goal)
         // TODO make sure we don't cross the line! (Async command?)
-        drive_sys.TurnToHeadingCmd(0, 0.4),
+        
         new Branch {
-            new VisionObjectExists(), // Maybe add filter for left/right limits?
+            new VisionObjectExists(vision_filter_s{
+                    .min_area = 4500,
+                    .max_area = 100000,
+                    .aspect_low = 0.5,
+                    .aspect_high = 2,
+                    .min_x = 0,
+                    .max_x = 320,
+                    .min_y = 0,
+                    .max_y = 240,
+            }), // Maybe add filter for left/right limits?
+            new InOrder{ // Object doesn't exist, big sad (turn & continue on)
+                new FunctionCommand(light_on),
+                drive_sys.TurnToHeadingCmd(123, 0.4)
+            },
             new InOrder { // Object exists, go get 'em!
+                cata_sys.IntakeToHold(),
                 new VisionTrackTriballCommand(),
                 // Back up & score
-                drive_sys.DriveToPointCmd({.x=0, .y=0}, REV, 0.4),
-                drive_sys.TurnToHeadingCmd(0, 0.4),
-                drive_sys.DriveToPointCmd({.x=0, .y=0}, FWD, 0.4),
+                drive_sys.TurnToHeadingCmd(0, 0.5),
                 cata_sys.Outtake(),
-                drive_sys.DriveForwardCmd(0, FWD, 0.6)->withTimeout(1),
-                cata_sys.StopIntake()
+                drive_sys.DriveForwardCmd(12, FWD, 0.8)->withTimeout(1),
+                cata_sys.StopIntake(),
 
-            },
-            new InOrder{ // Object doesn't exist, big sad (turn & continue on)
-                drive_sys.TurnToHeadingCmd(0, 0.4)
+                // Position for next ball
+                gps_reset(),
+                drive_sys.DriveForwardCmd(8, REV, 0.4)->withTimeout(1),
+                new FunctionCommand(light_on),
+                drive_sys.TurnToHeadingCmd(168, 0.4),
             }
         },
+        new Branch {
+            new VisionObjectExists(vision_filter_s{
+                    .min_area = 4500,
+                    .max_area = 100000,
+                    .aspect_low = 0.5,
+                    .aspect_high = 2,
+                    .min_x = 0,
+                    .max_x = 320,
+                    .min_y = 0,
+                    .max_y = 240,
+            }),
+            new InOrder { // Object doesn't exist, big sad (turn & continue on)
+                // No change
+            },
+            new InOrder { // Object exists, go get 'em!
+                cata_sys.IntakeToHold(),
+                new VisionTrackTriballCommand(),
+                drive_sys.TurnToHeadingCmd(0, 0.4),
+                cata_sys.Outtake(),
+                drive_sys.DriveForwardCmd(24, FWD, 0.8)->withTimeout(2),
+                cata_sys.StopIntake(),
+            }
+        },
+        
+        gps_reset(),
 
-        // Score
-
-        // grab from center (furthest from goal)
-
-        // Score
-
-        // grab from bar (closest)
+        // Grab triball along wall
+        drive_sys.DriveForwardCmd(8, REV, 0.4),
+        drive_sys.TurnToHeadingCmd(214, 0.4),
+        cata_sys.IntakeToHold(),
+        new VisionTrackTriballCommand(),
+        drive_sys.TurnToHeadingCmd(17, 0.4),
+        new Async{
+            new InOrder {
+                new DelayCommand(200),
+                cata_sys.Outtake()
+            }
+        },
+        drive_sys.DriveForwardCmd(40, FWD, 0.8)->withTimeout(2),
+        drive_sys.DriveForwardCmd(8, REV, 0.4),
+        gps_reset(),
+        tempend,
 
     };
 

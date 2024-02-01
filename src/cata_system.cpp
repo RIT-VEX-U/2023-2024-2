@@ -86,18 +86,22 @@ int thread_func(void* void_cata) {
                 intake_type == CataSys::IntakeType::Hold) {
                 // Intake until ball is sensed in intake, then stop
                 // timer to make sure it doesn't go straight through
+                static vex::timer timer;
+                static bool last_ball_in_intake = false;
                 if (ball_in_intake) {
-                    vex::timer timer;
-                    timer.reset();
 
-                    if(timer.value() >= .25){
+                    if(!last_ball_in_intake)
+                        timer.reset();
+                    last_ball_in_intake = true;
+
+                    if(timer.time(sec) > 0.05) {
                         cata.intake_upper.stop(brakeType::hold);
                         cata.intake_lower.stop(brakeType::hold);
                     }
-                }
-                else {
+                } else {
                     cata.intake_upper.spin(vex::fwd, intake_upper_volt_hold, vex::volt);
                     cata.intake_lower.spin(vex::fwd, intake_lower_volt, vex::volt);
+                    last_ball_in_intake = false;
                 }
             }
             else if (intaking_requested &&

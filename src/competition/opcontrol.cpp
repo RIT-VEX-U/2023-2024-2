@@ -37,7 +37,7 @@ void tuning()
  */
 void opcontrol()
 {
-    // autonomous();
+    autonomous();
     // vexDelay(1000);
 
     // while (imu.isCalibrating() || gps_sensor.isCalibrating())
@@ -94,8 +94,6 @@ void opcontrol()
         right_motors.spin(directionType::rev, 5, volt);
         left_motors.spin(directionType::fwd, 3, volt);
         vexDelay(150);
-        right_motors.stop(brakeType::hold);
-        left_motors.stop(brakeType::hold);
         right_motors.stop(brakeType::coast);
         left_motors.stop(brakeType::coast);
         disable_drive = false;
@@ -108,8 +106,8 @@ void opcontrol()
         right_motors.spin(directionType::fwd, 3, volt);
         left_motors.spin(directionType::rev, 5, volt);
         vexDelay(150);
-        right_motors.stop(brakeType::hold);
-        left_motors.stop(brakeType::hold);
+        right_motors.stop(brakeType::coast);
+        left_motors.stop(brakeType::coast);
         disable_drive = false;
     });
 
@@ -120,13 +118,29 @@ void opcontrol()
         right_climb.set(isUp);
     }); 
 
+    con.ButtonRight.pressed([](){
+        vision_light.set(!vision_light.value());
+    });
+
+    vision_light.set(false);
+
+    static std::atomic<bool> brake_mode_toggled(false);
+    con.ButtonX.pressed([](){
+        brake_mode_toggled = !brake_mode_toggled;
+    });
+
   // ================ INIT ================
     while (true) {
 #ifdef Tank
         double l = con.Axis3.position() / 100.0;
         double r = con.Axis2.position() / 100.0;
         if(!disable_drive)
-            drive_sys.drive_tank(l, r, 1, TankDrive::BrakeType::None);
+        {
+            if(brake_mode_toggled)
+                drive_sys.drive_tank(l, r, 1, TankDrive::BrakeType::Smart);
+            else
+                drive_sys.drive_tank(l, r, 1, TankDrive::BrakeType::None);
+        }
 
 #else
 
@@ -142,6 +156,18 @@ void opcontrol()
 
         // printf("x: %f\n", gps_sensor.xPosition(distanceUnits::in));
         static VisionTrackTriballCommand viscmd;
+        static VisionObjectExists existscmd(vision_filter_s{
+                    .min_area = 8000,
+                    .max_area = 100000,
+                    .aspect_low = 0.5,
+                    .aspect_high = 2,
+                    .min_x = 0,
+                    .max_x = 320,
+                    .min_y = 0,
+                    .max_y = 240,
+            });
+
+        printf("exists? %d\n", existscmd.test());
 
         // if(con.ButtonB.pressing())
         // {
@@ -161,11 +187,16 @@ void opcontrol()
 
 
         cam.takeSnapshot(TRIBALL);
-        estimate_triball_pos(cam.largestObject);
         printf("I: %f, N: %d, X: %d, Y: %d, A: %d, Ratio: %f\n", intake_watcher.objectDistance(distanceUnits::mm), cam.objectCount,
             cam.largestObject.centerX, cam.largestObject.centerY, 
             cam.largestObject.width * cam.largestObject.height,
             (double)cam.largestObject.width / (double)cam.largestObject.height);
+        // pose_t pos = odom.get_position();
+        // printf("X: %.2f, Y: %.2f, R:%.2f\n", pos.x, pos.y, pos.rot);
+        // printf("GPS X: %.2f, Y: %.2f, R: %.2f Q: %d\n", 
+        //     gps_sensor.xPosition(distanceUnits::in)+72, 
+        //     gps_sensor.yPosition(distanceUnits::in)+72, 
+        //     gps_sensor.heading(), gps_sensor.quality());
 
         // if (gps_sensor.quality() > 95)
         // {
