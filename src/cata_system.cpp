@@ -24,6 +24,7 @@ FeedForward::ff_config_t ffc = { .kG = -2 };
 PIDFF cata_pid(pc, ffc);
 
 bool intake_can_be_enabled(double cata_pos) {
+    printf("intake: %f\n", cata_pos);
     return (cata_pos == 0.0) || (cata_pos > inake_enable_lower_threshold &&
         cata_pos < intake_enable_upper_threshold);
 }

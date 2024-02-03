@@ -151,22 +151,22 @@ void opcontrol()
 #endif
         
         // tuning();
-        // matchload_1([&](){ return enable_matchload;}); // Toggle
-        static timer matchload_tmr;
-        if(enable_matchload)
-        {
-            AutoCommand *drive1 = drive_sys.DriveForwardCmd(8, directionType::rev, 0.4)->withTimeout(1);
-            AutoCommand *drive2 = drive_sys.DriveForwardCmd(8, directionType::fwd, 0.4)->withTimeout(1);
-            AutoCommand *delay = new DelayCommand(350);
-            CommandController cmd{
-                drive1, drive2, delay
-            };
-            cmd.run();
-            // Clean up bc memory is crazy
-            delete drive1;
-            delete drive2;
-            delete delay;
-        }
+        matchload_1([&](){ return enable_matchload;}); // Toggle
+        // static timer matchload_tmr;
+        // if(enable_matchload)
+        // {
+        //     AutoCommand *drive1 = drive_sys.DriveForwardCmd(8, directionType::rev, 0.4)->withTimeout(1);
+        //     AutoCommand *drive2 = drive_sys.DriveForwardCmd(8, directionType::fwd, 0.4)->withTimeout(1);
+        //     AutoCommand *delay = new DelayCommand(350);
+        //     CommandController cmd{
+        //         drive1, drive2, delay
+        //     };
+        //     cmd.run();
+        //     // Clean up bc memory is crazy
+        //     delete drive1;
+        //     delete drive2;
+        //     delete delay;
+        // }
 
         // printf("x: %f\n", gps_sensor.xPosition(distanceUnits::in));
         static VisionTrackTriballCommand viscmd;

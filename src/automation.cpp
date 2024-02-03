@@ -195,11 +195,12 @@ void matchload_1(std::function<bool()> enable)
     drive_tmr.reset();
     CommandController cmd{
         cata_sys.IntakeFully(),
-        intakeToCata->withTimeout(3),
+        intakeToCata->withTimeout(1),
         new Async{
             new InOrder{
                 new DelayCommand(200),
                 cata_sys.Fire(),
+                cata_sys.IntakeFully(),
             }
         },
         drive_sys.DriveForwardCmd(14, REV, 0.6)->withTimeout(1),
