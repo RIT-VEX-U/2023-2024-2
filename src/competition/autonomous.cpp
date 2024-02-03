@@ -8,7 +8,7 @@
 #define FWD vex::directionType::fwd
 #define REV vex::directionType::rev
 
-// #define RED
+#define RED
 
 enum Side
 {
@@ -244,20 +244,16 @@ void scoreAutoFull()
 
     CommandController cmd{
         odom.SetPositionCmd({.x=54, .y=15, .rot=0}),
+        new DelayCommand(500), // Wait for the catapult to go down
         // Collect Ball (after delay)
-        new Async(new InOrder{
-            new WaitUntilCondition(new FunctionCondition([](){
-                return odom.get_position().x > 64;
-            })),
-            cata_sys.IntakeToHold(),
-        }),
-    
+        cata_sys.IntakeToHold(),
+
         // Drive to goal
         drive_sys.PurePursuitCmd(PurePursuit::Path({
             {.x=54, .y=15},
             {.x=97, .y=17},
             {.x=120, .y=28},
-            {.x=127, .y=38},
+            {.x=124, .y=38},
         }, 8), directionType::fwd, 0.4),
         drive_sys.TurnToHeadingCmd(90, 0.4),
         cata_sys.Outtake(),
@@ -301,7 +297,6 @@ void scoreAutoFull()
             {.x=106, .y=35},
             {.x=106, .y=52},
         }, 8), FWD, 0.3),
-        drive_sys.TurnToHeadingCmd(70, 0.4),
 
         // grab from center (closest to goal)
         // TODO make sure we don't cross the line! (Async command?)
