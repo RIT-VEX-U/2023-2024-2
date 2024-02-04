@@ -134,12 +134,19 @@ void opcontrol()
 #ifdef Tank
         double l = con.Axis3.position() / 100.0;
         double r = con.Axis2.position() / 100.0;
-        if(!disable_drive)
+        if(!disable_drive && !enable_matchload)
         {
             if(brake_mode_toggled)
                 drive_sys.drive_tank(l, r, 1, TankDrive::BrakeType::Smart);
             else
                 drive_sys.drive_tank(l, r, 1, TankDrive::BrakeType::None);
+        }
+
+        if(!disable_drive && enable_matchload)
+        {
+            double l = con.Axis3.position() / 100.0;
+            double r = con.Axis1.position() / 100.0;
+            drive_sys.drive_arcade(l, 0);
         }
 
 #else
@@ -151,7 +158,7 @@ void opcontrol()
 #endif
         
         // tuning();
-        matchload_1([&](){ return enable_matchload;}); // Toggle
+        // matchload_1([&](){ return enable_matchload;}); // Toggle
         // static timer matchload_tmr;
         // if(enable_matchload)
         // {

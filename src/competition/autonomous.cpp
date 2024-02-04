@@ -51,7 +51,8 @@ class WingCmd : public AutoCommand
 void autonomous()
 {
     while(imu.isCalibrating() || gps_sensor.isCalibrating()){vexDelay(100);}
-    scoreAutoFull();
+    // scoreAutoFull();
+    skills();
 }
 
 FunctionCommand* gps_reset()
