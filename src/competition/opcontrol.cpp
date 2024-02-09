@@ -6,7 +6,7 @@
 #include "vision.h"
 #include <atomic>
 
-// #define Tank
+#define Tank
 
 void tuning()
 {
@@ -120,8 +120,8 @@ void opcontrol()
 
     // personal debug button >:]
     con.ButtonRight.pressed([](){
-        // vision_light.set(!vision_light.value());
-        gps_localize_stdev();
+        vision_light.set(!vision_light.value());
+        // gps_localize_stdev();
     });
 
     vision_light.set(false);
