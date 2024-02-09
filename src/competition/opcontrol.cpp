@@ -6,7 +6,7 @@
 #include "vision.h"
 #include <atomic>
 
-#define Tank
+// #define Tank
 
 void tuning()
 {
@@ -118,8 +118,10 @@ void opcontrol()
         right_climb.set(isUp);
     }); 
 
+    // personal debug button >:]
     con.ButtonRight.pressed([](){
-        vision_light.set(!vision_light.value());
+        // vision_light.set(!vision_light.value());
+        gps_localize_stdev();
     });
 
     vision_light.set(false);
@@ -176,19 +178,19 @@ void opcontrol()
         // }
 
         // printf("x: %f\n", gps_sensor.xPosition(distanceUnits::in));
-        static VisionTrackTriballCommand viscmd;
-        static VisionObjectExists existscmd(vision_filter_s{
-                    .min_area = 8000,
-                    .max_area = 100000,
-                    .aspect_low = 0.5,
-                    .aspect_high = 2,
-                    .min_x = 0,
-                    .max_x = 320,
-                    .min_y = 0,
-                    .max_y = 240,
-            });
+        // static VisionTrackTriballCommand viscmd;
+        // static VisionObjectExists existscmd(vision_filter_s{
+        //             .min_area = 8000,
+        //             .max_area = 100000,
+        //             .aspect_low = 0.5,
+        //             .aspect_high = 2,
+        //             .min_x = 0,
+        //             .max_x = 320,
+        //             .min_y = 0,
+        //             .max_y = 240,
+        //     });
 
-        printf("exists? %d\n", existscmd.test());
+        // printf("exists? %d\n", existscmd.test());
 
         // if(con.ButtonB.pressing())
         // {
@@ -207,11 +209,11 @@ void opcontrol()
         }
 
 
-        cam.takeSnapshot(TRIBALL);
-        printf("I: %f, N: %d, X: %d, Y: %d, A: %d, Ratio: %f\n", intake_watcher.objectDistance(distanceUnits::mm), cam.objectCount,
-            cam.largestObject.centerX, cam.largestObject.centerY, 
-            cam.largestObject.width * cam.largestObject.height,
-            (double)cam.largestObject.width / (double)cam.largestObject.height);
+        // cam.takeSnapshot(TRIBALL);
+        // printf("I: %f, N: %d, X: %d, Y: %d, A: %d, Ratio: %f\n", intake_watcher.objectDistance(distanceUnits::mm), cam.objectCount,
+        //     cam.largestObject.centerX, cam.largestObject.centerY, 
+        //     cam.largestObject.width * cam.largestObject.height,
+        //     (double)cam.largestObject.width / (double)cam.largestObject.height);
         // pose_t pos = odom.get_position();
         // printf("X: %.2f, Y: %.2f, R:%.2f\n", pos.x, pos.y, pos.rot);
         // printf("GPS X: %.2f, Y: %.2f, R: %.2f Q: %d\n", 
@@ -219,14 +221,8 @@ void opcontrol()
         //     gps_sensor.yPosition(distanceUnits::in)+72, 
         //     gps_sensor.heading(), gps_sensor.quality());
 
-        // if (gps_sensor.quality() > 95)
-        // {
-        //     odom.set_position({
-        //         .x=gps_sensor.xPosition(distanceUnits::in) + 72, 
-        //         .y=gps_sensor.yPosition(distanceUnits::in) + 72,
-        //         .rot=gps_sensor.heading(),
-        //     });
-        // }
+        
+
 
         // Controls
         // Intake
