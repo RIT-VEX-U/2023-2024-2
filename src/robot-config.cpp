@@ -129,26 +129,51 @@ PID::pid_config_t turn_pid_cfg =
 };
 
 MotionController::m_profile_cfg_t drive_mc_cfg{
-    .max_v = 72.50,
-    .accel = 190.225,
-    .pid_cfg = drive_pid_cfg,
+    .max_v = 40, // Max 50 in/sec (at 100%)
+    .accel = 100, // Max 250 in/sec^2 (at 100%)
+    .pid_cfg = PID::pid_config_t{
+        .p = .03,
+        .i = 0,
+        .d = 0.003,
+        .deadband = 0.5,
+        .on_target_time = 0.1,
+    },
     .ff_cfg = FeedForward::ff_config_t{
-        .kS = 0.05,
-        .kV = 0.0131,
-        .kA = 0.0029,
+        .kS = 0.04,
+        .kV = 0.01,
+        .kA = 0,
         .kG = 0,
     }
 };
 MotionController drive_mc{ drive_mc_cfg };
 
+MotionController::m_profile_cfg_t turn_mc_cfg{
+    .max_v = 300, // 300 deg/sec max
+    .accel = 1000, 
+    .pid_cfg = PID::pid_config_t{
+        .p = 0.04,
+        .i = 0,
+        .d = 0.002,
+        .deadband = 0,
+        .on_target_time = 0,
+    },
+    .ff_cfg = FeedForward::ff_config_t{
+        .kS = 0.02,
+        // .kV = 0.002,
+        .kA = 0,
+        .kG = 0,
+    }
+};
+MotionController turn_mc{ turn_mc_cfg };
+
 robot_specs_t robot_cfg = {
     .robot_radius = 12,            // inches
-    .odom_wheel_diam = 3.15,          // inches
-    .odom_gear_ratio = .5,
-    .dist_between_wheels = 10.6,    // inches
+    .odom_wheel_diam = 4.14,          // inches
+    .odom_gear_ratio = .6667,
+    .dist_between_wheels = 10.3,    // inches
     .drive_correction_cutoff = 4, // inches
-    .drive_feedback = new PID(drive_pid_cfg),//&drive_mc,
-    .turn_feedback = new PID(turn_pid_cfg),
+    .drive_feedback = &drive_mc,
+    .turn_feedback = &turn_mc, //new PID(turn_pid_cfg),
     .correction_pid = (PID::pid_config_t){
         .p = .01,
         .d = .001

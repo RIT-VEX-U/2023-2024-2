@@ -17,7 +17,8 @@ public:
         StopIntake,
         IntakeOut,
         StartMatchLoad,
-        StopMatchLoad
+        StopMatchLoad,
+        DisableCata
     };
     enum class IntakeType
     {
@@ -30,7 +31,8 @@ public:
     {
         CHARGING,
         READY,
-        FIRING
+        FIRING,
+        DISABLE
     };
 
     CataSys(vex::distance &intake_watcher, vex::pot &cata_pot, vex::optical &cata_watcher, vex::motor_group &cata_motor, vex::motor &intake_upper, vex::motor &intake_lower);
@@ -66,6 +68,7 @@ private:
     bool firing_requested;
     bool intaking_requested;
     bool matchload_requested;
+    bool disable_requested;
     IntakeType intake_type;
     friend int thread_func(void *void_cata);
     friend class CataSysPage;

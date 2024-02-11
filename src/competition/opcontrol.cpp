@@ -5,45 +5,28 @@
 #include "vex.h"
 #include "vision.h"
 #include <atomic>
+#include "tuning.h"
 
 #define Tank
-
-void tuning()
-{
-    bool done = false;
-    odom.set_position({.x=18, .y=125, .rot=204});
-    while (con.ButtonUp.pressing()) {
-        // if(!done && drive_sys.drive_forward(12, directionType::fwd, .5))
-        //     done = true;
-
-        // if (!done && drive_sys.turn_to_heading(330, .5))
-        //     done = true;
-        
-        if (!done && drive_sys.pure_pursuit(PurePursuit::Path({
-                {.x=18, .y=125},
-                {.x=38, .y=134},
-                {.x=98, .y=130},
-                }, 6), directionType::rev, .5))
-            done = true;
-
-        pose_t pos = odom.get_position();
-        printf("x: %.2f, y: %.2f, r: %.2f\n", pos.x, pos.y, pos.rot);
-        vexDelay(10);
-    }
-}
 
 /**
  * Main entrypoint for the driver control period
  */
 void opcontrol()
 {
+    // ================ TUNING CODE (Disable when not testing) ================
     // autonomous();
-    // vexDelay(1000);
-
-    // while (imu.isCalibrating() || gps_sensor.isCalibrating())
+    // cata_sys.send_command(CataSys::Command::DisableCata);
+    // while(imu.isCalibrating()) {vexDelay(20);}
+    // while(true)
     // {
+    //     // pose_t p = odom.get_position();
+    //     // printf("{%f, %f, %f}\n", p.x, p.y, p.rot);
+    //     tune_drive_pid(DriveType::TURN);
     //     vexDelay(20);
     // }
+
+    // ================ END TUNING CODE =================
 
     static bool enable_matchload = false;
 
@@ -158,8 +141,8 @@ void opcontrol()
         if(!disable_drive)
             drive_sys.drive_arcade(f, s, 1, TankDrive::BrakeType::None);
 #endif
-        
-        // tuning();
+
+
         // matchload_1([&](){ return enable_matchload;}); // Toggle
         // static timer matchload_tmr;
         // if(enable_matchload)

@@ -58,14 +58,21 @@ int thread_func(void* void_cata) {
         bool firing_requested = cata.firing_requested;
         bool intaking_requested = cata.intaking_requested;
         bool matchload_requested = cata.matchload_requested;
+        bool disable_requested = cata.disable_requested;
         CataSys::IntakeType intake_type = cata.intake_type;
         cata.control_mut.unlock();
 
         bool intake_cata_enabled = false;
         double cata_pid_out = 0;
 
+        if(disable_requested)
+            cur_state = CataSys::CataState::DISABLE;
+
         // Main Intake State Machine
         switch (cur_state) {
+        case CataSys::CataState::DISABLE:
+            cata_motors.stop(brakeType::coast);
+            break;
         case CataSys::CataState::FIRING:
             cata.intake_upper.stop();
             cata.intake_lower.stop();
@@ -213,6 +220,9 @@ CataSys::CataSys(vex::distance& intake_watcher, vex::pot& cata_pot,
 void CataSys::send_command(Command next_cmd) {
     control_mut.lock();
     switch (next_cmd) {
+    case CataSys::Command::DisableCata:
+        disable_requested = true;
+        break;
     case CataSys::Command::StartFiring:
         firing_requested = true;
         break;
