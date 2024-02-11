@@ -6,9 +6,9 @@
  */
 PID::PID(pid_config_t &config) : config(config) { pid_timer.reset(); }
 
-void PID::init(double start_pt, double set_pt, double, double end_vel) {
+void PID::init(double start_pt, double set_pt) {
   set_target(set_pt);
-  target_vel = end_vel;
+  target_vel = 0; // TODO change back when trapezoid profiles are fixed
   sensor_val = start_pt;
   reset();
 }

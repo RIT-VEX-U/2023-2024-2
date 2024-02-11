@@ -69,8 +69,7 @@ public:
    * base
    * @param end_vel sets the target end velocity of the PID controller
    */
-  void init(double start_pt, double set_pt, double start_vel = 0,
-            double end_vel = 0) override;
+  void init(double start_pt, double set_pt) override;
 
   /**
    * Update the PID loop by taking the time difference from last update,
