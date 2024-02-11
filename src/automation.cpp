@@ -246,7 +246,7 @@ void gps_localize_median()
     printf("MEDIAN {%.2f, %.2f, %.2f}\n", median.x, median.y, median.rot);
 }
 
-void gps_localize_stdev()
+std::tuple<pose_t, double> gps_localize_stdev()
 {
     auto pose_list = gps_gather_data();
 
@@ -282,7 +282,31 @@ void gps_localize_stdev()
     printf("Stddev: %f Mean: %f #Unfiltered: %d #Filtered: %d\n", dist_stdev, dist_mean, dist_list.size(), pose_list.size());
     printf("Unfiltered X: %f, Y: %f, H: %f\n", avg_unfiltered.x, avg_unfiltered.y, avg_unfiltered.rot);
     printf("Filtered X: %f, Y: %f, H: %f\n", avg_filtered.x, avg_filtered.y, avg_filtered.rot);
+
+    return std::tuple<pose_t, double>(avg_filtered, dist_stdev);
 }
+
+bool GPSLocalizeCommand::first_run = true;
+int GPSLocalizeCommand::rotation = 0;
+bool GPSLocalizeCommand::run()
+{
+    auto [new_pose, stddev] = gps_localize_stdev();
+    // On the first localize, decide if the orientation of the field is correct.
+    // If not, create a rotation to correct
+    if(first_run)
+    {
+        
+        first_run = false;
+        return true;
+    }
+
+    odom.set_position(new_pose);
+    printf("Localized with variance of %f, to {%f, %f, %f}\n",
+            stddev, new_pose.x, new_pose.y, new_pose.rot);
+    return true;
+}
+
+
 
 // ================ Driver Assist Automations ================
 
