@@ -65,13 +65,13 @@ class GPSLocalizeCommand : public AutoCommand
 {
     public:
     bool run() override;
+    static pose_t get_pose_rotated();
 
     private:
     static bool first_run;
     static int rotation;
-    static const int min_rotation_radius = 36; // 1.5 tiles
+    static const int min_rotation_radius;
 };
-
 
 // ================ Driver Assist Automations ================
 void matchload_1(bool &enable);

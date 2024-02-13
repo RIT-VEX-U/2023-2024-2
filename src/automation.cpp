@@ -121,6 +121,13 @@ std::vector<vision::object> vision_run_filter(vision::signature &sig, vision_fil
         out.push_back(cur_obj);
     }
 
+    // Sort objects, largest area = first in list
+    std::sort(out.begin(), out.end(), [](vision::object obj1, vision::object obj2){
+        int area1 = obj1.width * obj1.height;
+        int area2 = obj2.width * obj2.height;
+        return area1 > area2;
+    });
+
     // Only for debugging
     // printf("Num: %d\n", out.size());
     
@@ -136,6 +143,7 @@ bool VisionObjectExists::test()
     return vision_run_filter(TRIBALL, this->filter).size() > 0;
 }
 
+// DOES NOT WORK, DO NOT USE! 
 point_t estimate_triball_pos(vision::object &obj)
 {
     pose_t robot_pose = odom.get_position();
@@ -155,9 +163,11 @@ point_t estimate_triball_pos(vision::object &obj)
     return field_pos;
 }
 
+// DOES NOT WORK UNTIL estimate_triball_pos IS FIXED!
 IsTriballInArea::IsTriballInArea(point_t pos, int radius, vision_filter_s &filter)
 : filter(filter), pos(pos), radius(radius) {}
 
+// DOES NOT WORK UNTIL estimate_triball_pos IS FIXED!
 bool IsTriballInArea::test()
 {
     std::vector<vision::object> objs = vision_run_filter(TRIBALL, filter);
@@ -288,25 +298,60 @@ std::tuple<pose_t, double> gps_localize_stdev()
 
 bool GPSLocalizeCommand::first_run = true;
 int GPSLocalizeCommand::rotation = 0;
+const int GPSLocalizeCommand::min_rotation_radius = 36;
 bool GPSLocalizeCommand::run()
 {
+    pose_t odom_pose = odom.get_position();
     auto [new_pose, stddev] = gps_localize_stdev();
+    Vector2D new_pose_vec(point_t{new_pose.x, new_pose.y});
+    
     // On the first localize, decide if the orientation of the field is correct.
     // If not, create a rotation to correct
     if(first_run)
     {
         
+        for(int i = 0; i < 4; i++)
+        {
+            Vector2D rot(new_pose_vec.get_dir() + deg2rad(i * 90), new_pose_vec.get_mag());
+
+            // Test if the rotated vector is within an acceptable distance
+            // to what odometry is reporting
+            if (odom_pose.get_point().dist(rot.point()) < min_rotation_radius)
+            {
+                rotation = i * 90;
+                break;
+            }
+        }
+
+        printf("Localize init complete: Detected field rotated by %d degrees", rotation);
         first_run = false;
-        return true;
     }
 
-    odom.set_position(new_pose);
-    printf("Localized with variance of %f, to {%f, %f, %f}\n",
-            stddev, new_pose.x, new_pose.y, new_pose.rot);
+    Vector2D rot(new_pose_vec.get_dir() + deg2rad(rotation), new_pose_vec.get_mag());
+    odom.set_position(pose_t{
+        .x = rot.get_x(),
+        .y = rot.get_y(),
+        .rot = new_pose.rot
+    });
+    printf("Localized with variance of %f, rotated by %f degrees, to {%f, %f, %f}\n",
+            stddev, rotation, new_pose.x, new_pose.y, new_pose.rot);
     return true;
 }
 
+pose_t GPSLocalizeCommand::get_pose_rotated()
+{
+    Vector2D new_pose_vec(point_t{
+        .x = gps_sensor.xPosition(distanceUnits::in) + 72,
+        .y = gps_sensor.yPosition(distanceUnits::in) + 72
+    });
+    Vector2D rot(new_pose_vec.get_dir() + deg2rad(rotation), new_pose_vec.get_mag());
 
+    return pose_t{
+        .x = rot.get_x(),
+        .y = rot.get_y(),
+        .rot = gps_sensor.heading(rotationUnits::deg)
+    };
+}
 
 // ================ Driver Assist Automations ================
 

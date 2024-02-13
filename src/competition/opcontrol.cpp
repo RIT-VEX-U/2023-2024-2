@@ -15,19 +15,10 @@
 void opcontrol()
 {
     // ================ TUNING CODE (Disable when not testing) ================
-    // autonomous();
-    // cata_sys.send_command(CataSys::Command::DisableCata);
-    // while(imu.isCalibrating()) {vexDelay(20);}
-    // while(true)
-    // {
-    //     // pose_t p = odom.get_position();
-    //     // printf("{%f, %f, %f}\n", p.x, p.y, p.rot);
-    //     tune_drive_pid(DriveType::TURN);
-    //     vexDelay(20);
-    // }
+    testing();
 
-    // ================ END TUNING CODE =================
 
+    // ================ INIT ================
     static bool enable_matchload = false;
 
     left_wing.set(false);
@@ -114,7 +105,9 @@ void opcontrol()
         brake_mode_toggled = !brake_mode_toggled;
     });
 
-  // ================ INIT ================
+
+
+    // ================ PERIODIC ================
     while (true) {
 #ifdef Tank
         double l = con.Axis3.position() / 100.0;
@@ -213,5 +206,85 @@ void opcontrol()
         vexDelay(10);
     }
 
-    // ================ PERIODIC ================
+
+}
+
+void testing()
+{
+    // ================ AUTONOMOUS TESTING ================
+    // autonomous(); 
+
+    while(imu.isCalibrating() || gps_sensor.isCalibrating()) {vexDelay(20);}
+
+    static std::atomic<bool> disable_drive(false);
+
+    cata_sys.send_command(CataSys::Command::DisableCata);
+
+    // ================ ODOMETRY TESTING ================
+
+    // Reset encoder odometry to 0,0,90 with button X
+    con.ButtonX.pressed([](){
+        odom.set_position();
+    });
+
+    // Test localization with button Y
+    con.ButtonY.pressed([](){
+        GPSLocalizeCommand().run();
+    });
+
+    // ================ DRIVE TESTING ================
+
+    // While *holding* button A, tune drive-to-point
+    con.ButtonA.pressed([](){
+        disable_drive = true;
+
+        FunctionCondition end_con([](){
+            return !con.ButtonA.pressing();
+        });
+        CommandController{
+            drive_sys.DriveToPointCmd({0, 48}, directionType::fwd)->withCancelCondition(&end_con)
+        }.run();
+
+        disable_drive = false;
+    });
+
+    // While *holding* button B, tune turn-to-heading
+    con.ButtonB.pressed([](){
+        disable_drive = true;
+
+        FunctionCondition end_con([](){
+            return !con.ButtonB.pressing();
+        });
+        CommandController{
+            drive_sys.TurnToHeadingCmd(turn_mc, 270)->withCancelCondition(&end_con)
+        }.run();
+
+        disable_drive = false;
+    });
+
+    // ================ VISION TESTING ================
+    con.ButtonRight.pressed([](){
+        vision_light.set(!vision_light.value());
+    });
+
+
+    while(true)
+    {
+        // ================ Controls ================
+        double f = con.Axis3.position() / 100.0;
+        double s = con.Axis1.position() / 100.0;
+        if(!disable_drive)
+            drive_sys.drive_arcade(f, s, 1, TankDrive::BrakeType::None);
+
+        // ================ Debug Print Statements ================
+        pose_t odom_pose = odom.get_position();
+        pose_t gps_pose = GPSLocalizeCommand::get_pose_rotated();
+
+        printf("ODO: {%.2f, %.2f, %.2f} | GPS: {%.2f, %.2f, %.2f}\n",
+                odom_pose.x, odom_pose.y, odom_pose.rot, gps_pose.x, gps_pose.y, gps_pose.rot);
+
+        auto objs = vision_run_filter(TRIBALL);
+        printf("CAM: N:%d | {%d, %d}, A:%d\n", 
+                objs.size(), objs[0].centerX, objs[0].centerY, objs[0].width * objs[0].height);
+    }
 }
