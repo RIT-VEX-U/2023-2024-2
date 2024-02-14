@@ -219,7 +219,7 @@ void tune_drive_pid(DriveType dt)
         printf("%.2f, %.2f, %.2f, ", pos.x, pos.y, pos.rot);
         printf("accel: %2f\n", odom.get_accel());
 
-        if (dt == DRIVE && (done || drive_sys.drive_to_point(0, 48, fwd, drive_mc)))
+        if (dt == DRIVE && (done || drive_sys.drive_to_point(0, 48, fwd, drive_mc_fast)))
         {
             
             printf("Finished\n");

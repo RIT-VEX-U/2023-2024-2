@@ -46,57 +46,11 @@ class WingCmd : public AutoCommand
 /**
  * Main entrypoint for the autonomous period
  */
-
-
 void autonomous()
 {
     while(imu.isCalibrating() || gps_sensor.isCalibrating()){vexDelay(100);}
-    // scoreAutoFull();
-    skills();
-}
-
-FunctionCommand* gps_reset()
-{
-    return new FunctionCommand([](){
-        if (gps_sensor.xPosition() == 0.0 && gps_sensor.yPosition() == 0.0)
-            return false;
-
-        pose_t orig = odom.get_position();
-        static timer t;
-        t.reset();
-        double x = orig.x, y= orig.y, rot = orig.rot;
-        int itr = 0;
-        while(t.time(sec) < 0.5)
-        {
-            if(gps_sensor.quality() > 99)
-            {
-                x += gps_sensor.xPosition(distanceUnits::in)+72;
-                y += gps_sensor.yPosition(distanceUnits::in)+72;
-                rot = gps_sensor.heading();
-                itr++;
-            }
-        }
-
-        if(itr > 0)
-        {
-            x = x / itr;
-            y = y / itr;
-        }
-
-        odom.set_position({
-            #ifdef RED
-                .x = x,
-                .y = y,
-                .rot = rot
-            #else
-                .x = 144 - x,
-                .y = 144 - y,
-                .rot = rot - 180
-            #endif
-        });
-
-        return true;
-    });
+    scoreAutoFull();
+    // skills();
 }
 
 bool light_on()
@@ -119,6 +73,9 @@ class DebugCommand : public AutoCommand
     {
         drive_sys.stop();
         cata_sys.send_command(CataSys::Command::StopIntake);
+        cata_sys.send_command(CataSys::Command::ToggleCata);
+        pose_t pos = odom.get_position();
+        printf("ODO X: %.2f, Y: %.2f, R:%.2f, ", pos.x, pos.y, pos.rot);
         vision_light.set(true);
         while(true)
         {
@@ -127,88 +84,21 @@ class DebugCommand : public AutoCommand
             double s = con.Axis1.position() / 200.0;
             drive_sys.drive_arcade(f, s, 1, TankDrive::BrakeType::None);
             pose_t pos = odom.get_position();
-            printf("ODO X: %.2f, Y: %.2f, R:%.2f, ", pos.x, pos.y, pos.rot);
-            printf("GPS X: %.2f, Y: %.2f, R: %.2f Q: %d\n", 
-                gps_sensor.xPosition(distanceUnits::in)+72, 
-                gps_sensor.yPosition(distanceUnits::in)+72, 
-                gps_sensor.heading(), gps_sensor.quality());
+            printf("ODO X: %.2f, Y: %.2f, R:%.2f\n", pos.x, pos.y, pos.rot);
+            // printf("GPS X: %.2f, Y: %.2f, R: %.2f Q: %d\n", 
+            //     gps_sensor.xPosition(distanceUnits::in)+72, 
+            //     gps_sensor.yPosition(distanceUnits::in)+72, 
+            //     gps_sensor.heading(), gps_sensor.quality());
             cam.takeSnapshot(TRIBALL);
-            printf("X: %d, Y: %d, A: %d, Ratio: %f\n", 
-                cam.largestObject.centerX, cam.largestObject.centerY, 
-                cam.largestObject.width * cam.largestObject.height,
-                (double)cam.largestObject.width / (double)cam.largestObject.height);
+            // printf("X: %d, Y: %d, A: %d, Ratio: %f\n", 
+            //     cam.largestObject.centerX, cam.largestObject.centerY, 
+            //     cam.largestObject.width * cam.largestObject.height,
+            //     (double)cam.largestObject.width / (double)cam.largestObject.height);
             vexDelay(100);
         }
         return false;
     }
 };
-
-void scoreAutoAWP()
-{
-    DebugCommand *tempend = new DebugCommand();
-
-    CommandController cmd{
-        odom.SetPositionCmd({.x=54, .y=15, .rot=0}),
-        // Collect Ball (after delay)
-        new Async(new InOrder{
-            new WaitUntilCondition(new FunctionCondition([](){
-                return odom.get_position().x > 64;
-            })),
-            cata_sys.IntakeToHold(),
-        }),
-    
-        // Drive to goal
-        drive_sys.PurePursuitCmd(PurePursuit::Path({
-            {.x=54, .y=15},
-            {.x=97, .y=17},
-            {.x=120, .y=28},
-            {.x=127, .y=38},
-        }, 8), directionType::fwd, 0.4),
-        drive_sys.TurnToHeadingCmd(90, 0.4),
-        cata_sys.Unintake(),
-        new DelayCommand(500),
-        drive_sys.DriveForwardCmd(10, FWD, 0.8)->withTimeout(1),
-        cata_sys.StopIntake(),
-        gps_reset(), // 126, 39, 90 ish
-
-        // Back up & get alliance ball
-        // drive_sys.DriveToPointCmd({.x=117, .y=22.6}, REV, 0.4),
-        drive_sys.PurePursuitCmd(PurePursuit::Path({
-            {.x=126, .y=39},
-            {.x=125, .y=32},
-            {.x=114, .y=26}
-        }, 8), REV, 0.4),
-        drive_sys.TurnToHeadingCmd(310, 0.4),
-        cata_sys.IntakeToHold(),
-        drive_sys.DriveForwardCmd(12, FWD, 0.25)->withTimeout(.7),
-        cata_sys.WaitForIntake()->withTimeout(3),
-        drive_sys.DriveForwardCmd(4, REV, 0.4),
-        
-        // Score alliance ball
-        drive_sys.TurnToHeadingCmd(61, 0.4),
-        drive_sys.DriveToPointCmd({.x=124, .y=35}, FWD, .4),
-        drive_sys.TurnToHeadingCmd(90, 0.4),
-        cata_sys.Unintake(),
-        new DelayCommand(500),
-        drive_sys.DriveForwardCmd(10, FWD, 0.8)->withTimeout(1),
-        cata_sys.StopIntake(),
-        drive_sys.DriveForwardCmd(10, REV, 0.4)->withTimeout(1),
-        gps_reset(),
-
-        // Touch bar
-        drive_sys.TurnToHeadingCmd(224, 0.4),
-        drive_sys.PurePursuitCmd(PurePursuit::Path({
-            {.x=124, .y=33},
-            {.x=106, .y=14},
-            {.x=80, .y=14}
-        }, 8), FWD, 0.4),
-        drive_sys.TurnToHeadingCmd(140, 0.4),
-        drive_sys.DriveForwardCmd(12, FWD, 0.2)->withTimeout(2),
-    };
-
-    cmd.run();
-    
-}
 
 void scoreAutoFull()
 {
@@ -226,43 +116,45 @@ void scoreAutoFull()
             {.x=97, .y=17},
             {.x=120, .y=28},
             {.x=124, .y=38},
-        }, 8), directionType::fwd, 0.4),
-        drive_sys.TurnToHeadingCmd(90, 0.4),
+        }, 8), directionType::fwd, 0.45),
+        drive_sys.TurnToHeadingCmd(90),
         cata_sys.Unintake(),
         new DelayCommand(500),
-        drive_sys.DriveForwardCmd(10, FWD, 0.8)->withTimeout(1),
+        drive_sys.DriveForwardCmd(10, FWD)->withTimeout(1),
         cata_sys.StopIntake(),
-        gps_reset(), // 126, 39, 90 ish
+        new GPSLocalizeCommand(), // 126, 39, 90 ish
 
         // Back up & get alliance ball
-        // TODO use vision? prob not since its not green
-        // drive_sys.DriveToPointCmd({.x=117, .y=22.6}, REV, 0.4),
-        drive_sys.PurePursuitCmd(PurePursuit::Path({
-            {.x=126, .y=39},
-            {.x=125, .y=32},
-            {.x=118, .y=26}
-        }, 8), REV, 0.4),
-        drive_sys.TurnToHeadingCmd(310, 0.4),
+        drive_sys.TurnToHeadingCmd(230),
+        tempend,
         cata_sys.IntakeToHold(),
-        drive_sys.DriveForwardCmd(12, FWD, 0.4)->withTimeout(.7),
+        drive_sys.PurePursuitCmd(drive_mc_slow, PurePursuit::Path({
+            {.x=128, .y=38},
+            {.x=128, .y=26},
+            {.x=120, .y=17}
+        }, 4), FWD),
+        drive_sys.TurnToHeadingCmd(310),
         cata_sys.WaitForIntake()->withTimeout(3),
+        tempend,
         drive_sys.DriveForwardCmd(4, REV, 0.4),
         
         // Score alliance ball
-        drive_sys.TurnToHeadingCmd(61, 0.4),
-        drive_sys.DriveForwardCmd(9, FWD, 0.4),
-        drive_sys.TurnToHeadingCmd(90, 0.4),
+        drive_sys.TurnToHeadingCmd(61),
+        drive_sys.DriveForwardCmd(9, FWD),
+        drive_sys.TurnToHeadingCmd(90),
         cata_sys.Unintake(),
         new DelayCommand(500),
-        drive_sys.DriveForwardCmd(16, FWD, 0.8)->withTimeout(1),
+        drive_sys.DriveForwardCmd(16, FWD)->withTimeout(1),
         cata_sys.StopIntake(),
-        drive_sys.DriveForwardCmd(8, REV, 0.4)->withTimeout(1),
-        gps_reset(),
+        drive_sys.DriveForwardCmd(8, REV)->withTimeout(1),
+        new GPSLocalizeCommand(),
 
         // BEGIN UNTESTED
+        
 
         // Drive into position
         drive_sys.TurnToHeadingCmd(180, 0.4),
+        tempend,
         new FunctionCommand(light_on),
         drive_sys.PurePursuitCmd(PurePursuit::Path({
             {.x=125, .y=32},
@@ -298,7 +190,7 @@ void scoreAutoFull()
                 cata_sys.StopIntake(),
 
                 // Position for next ball
-                gps_reset(),
+                new GPSLocalizeCommand(),
                 drive_sys.DriveForwardCmd(8, REV, 0.4)->withTimeout(1),
                 new FunctionCommand(light_on),
                 drive_sys.TurnToHeadingCmd(168, 0.4),
@@ -328,7 +220,7 @@ void scoreAutoFull()
             }
         },
         
-        gps_reset(),
+        new GPSLocalizeCommand(),
 
         // Grab triball along wall
         drive_sys.DriveForwardCmd(8, REV, 0.4),
@@ -351,7 +243,7 @@ void scoreAutoFull()
                 drive_sys.DriveForwardCmd(40, FWD, 0.65)->withTimeout(1.5),
                 cata_sys.StopIntake(),
                 drive_sys.DriveForwardCmd(8, REV, 0.4),
-                gps_reset(),
+                new GPSLocalizeCommand(),
             }
         },
         // complete AWP

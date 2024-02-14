@@ -51,7 +51,8 @@ extern motor_group intake_motors;
 extern motor_group cata_motors;
 
 extern robot_specs_t robot_cfg;
-extern MotionController drive_mc, turn_mc;
+extern MotionController drive_mc_fast, drive_mc_slow, turn_mc;
+extern PID drive_pid;
 extern OdometryTank odom;
 extern TankDrive drive_sys;
 extern CataSys cata_sys;

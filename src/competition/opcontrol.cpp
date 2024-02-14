@@ -56,7 +56,7 @@ void opcontrol()
         right_wing.set(wing_isdown); 
     });
 
-    // con.ButtonUp.pressed([]() { enable_matchload = !enable_matchload; });
+    con.ButtonUp.pressed([]() { enable_matchload = !enable_matchload; });
     pose_t start_pose = { .x = 16, .y = 144 - 16, .rot = 135 };
 
     static std::atomic<bool> disable_drive(false);
@@ -104,11 +104,6 @@ void opcontrol()
         brake_mode_toggled = !brake_mode_toggled;
     });
 
-    con.ButtonUp.pressed([](){
-        cata_sys.send_command(CataSys::Command::ToggleCata);
-    });
-
-
     // ================ PERIODIC ================
     while (true) {
 #ifdef Tank
@@ -139,72 +134,6 @@ void opcontrol()
 
 
         // matchload_1([&](){ return enable_matchload;}); // Toggle
-        // static timer matchload_tmr;
-        // if(enable_matchload)
-        // {
-        //     AutoCommand *drive1 = drive_sys.DriveForwardCmd(8, directionType::rev, 0.4)->withTimeout(1);
-        //     AutoCommand *drive2 = drive_sys.DriveForwardCmd(8, directionType::fwd, 0.4)->withTimeout(1);
-        //     AutoCommand *delay = new DelayCommand(350);
-        //     CommandController cmd{
-        //         drive1, drive2, delay
-        //     };
-        //     cmd.run();
-        //     // Clean up bc memory is crazy
-        //     delete drive1;
-        //     delete drive2;
-        //     delete delay;
-        // }
-
-        // printf("x: %f\n", gps_sensor.xPosition(distanceUnits::in));
-        // static VisionTrackTriballCommand viscmd;
-        // static VisionObjectExists existscmd(vision_filter_s{
-        //             .min_area = 8000,
-        //             .max_area = 100000,
-        //             .aspect_low = 0.5,
-        //             .aspect_high = 2,
-        //             .min_x = 0,
-        //             .max_x = 320,
-        //             .min_y = 0,
-        //             .max_y = 240,
-        //     });
-
-        // printf("exists? %d\n", existscmd.test());
-
-        // if(con.ButtonB.pressing())
-        // {
-        //     if(intake_watcher.objectDistance(distanceUnits::mm) > 100.0)
-        //         viscmd.run();
-        //     else
-        //         drive_sys.stop();
-
-        //     cata_sys.send_command(CataSys::Command::IntakeHold);
-        // }
-
-        if (con.ButtonY.pressing())
-        {
-            static FunctionCommand* reset_gps_cmd = gps_reset();
-            reset_gps_cmd->run();
-        }
-
-
-        // cam.takeSnapshot(TRIBALL);
-        // printf("I: %f, N: %d, X: %d, Y: %d, A: %d, Ratio: %f\n", intake_watcher.objectDistance(distanceUnits::mm), cam.objectCount,
-        //     cam.largestObject.centerX, cam.largestObject.centerY, 
-        //     cam.largestObject.width * cam.largestObject.height,
-        //     (double)cam.largestObject.width / (double)cam.largestObject.height);
-        // pose_t pos = odom.get_position();
-        // printf("X: %.2f, Y: %.2f, R:%.2f\n", pos.x, pos.y, pos.rot);
-        // printf("GPS X: %.2f, Y: %.2f, R: %.2f Q: %d\n", 
-        //     gps_sensor.xPosition(distanceUnits::in)+72, 
-        //     gps_sensor.yPosition(distanceUnits::in)+72, 
-        //     gps_sensor.heading(), gps_sensor.quality());
-
-        
-
-
-        // Controls
-        // Intake
-
         vexDelay(10);
     }
 
@@ -225,43 +154,26 @@ void testing()
 
     // // Reset encoder odometry to 0,0,90 with button X
     con.ButtonX.pressed([](){
-        odom.set_position({28, 47, 0});
+        odom.set_position();
     });
 
     // // Test localization with button Y
     con.ButtonY.pressed([](){
         disable_drive = true;
+        vexDelay(500); // Settle first
         GPSLocalizeCommand().run();
         disable_drive = false;
     });
 
-    // // ================ DRIVE TESTING ================
-
-    // // While *holding* button A, tune drive-to-point
     con.ButtonA.pressed([](){
         disable_drive = true;
-
-        FunctionCondition end_con([](){
-            return !con.ButtonA.pressing();
-        });
         CommandController{
-            drive_sys.DriveToPointCmd({0, 48}, directionType::fwd)->withCancelCondition(&end_con)
+            drive_sys.DriveToPointCmd({.x=0, .y=48})->withCancelCondition(
+                new FunctionCondition([](){
+                    return con.ButtonA.pressing() == false;
+                })
+            )
         }.run();
-
-        disable_drive = false;
-    });
-
-    // // While *holding* button B, tune turn-to-heading
-    con.ButtonB.pressed([](){
-        disable_drive = true;
-
-        FunctionCondition end_con([](){
-            return !con.ButtonB.pressing();
-        });
-        CommandController{
-            drive_sys.TurnToHeadingCmd(turn_mc, 270)->withCancelCondition(&end_con)
-        }.run();
-
         disable_drive = false;
     });
 
@@ -276,11 +188,23 @@ void testing()
 
     while(true)
     {
+
         // ================ Controls ================
         double f = con.Axis3.position() / 100.0;
         double s = con.Axis1.position() / 100.0;
         if(!disable_drive)
             drive_sys.drive_arcade(f, s, 1, TankDrive::BrakeType::None);
+
+        // ================ Drive Tuning =================
+        static bool done_a = false;
+        if(con.ButtonA.pressing() && !done_a)
+        {
+            disable_drive = true;
+            done_a = drive_sys.drive_to_point(0, 48, directionType::fwd);
+        } else if(!con.ButtonA.pressing())
+        {
+            done_a = false;
+        }
 
         // ================ Debug Print Statements ================
         pose_t odom_pose = odom.get_position();
