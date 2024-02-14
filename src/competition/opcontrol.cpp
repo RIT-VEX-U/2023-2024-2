@@ -161,7 +161,7 @@ void testing()
     con.ButtonY.pressed([](){
         disable_drive = true;
         vexDelay(500); // Settle first
-        GPSLocalizeCommand().run();
+        GPSLocalizeCommand(RED).run();
         disable_drive = false;
     });
 

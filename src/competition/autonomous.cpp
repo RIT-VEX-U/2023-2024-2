@@ -8,7 +8,7 @@
 #define FWD vex::directionType::fwd
 #define REV vex::directionType::rev
 
-#define RED
+#define SIDE RED
 
 enum Side
 {
@@ -145,7 +145,7 @@ void scoreAutoFull()
         drive_sys.DriveForwardCmd(16, FWD)->withTimeout(1),
         cata_sys.StopIntake(),
         drive_sys.DriveForwardCmd(8, REV)->withTimeout(1),
-        new GPSLocalizeCommand(),
+        new GPSLocalizeCommand(SIDE),
 
         // Drive into position
         drive_sys.TurnToHeadingCmd(180),
@@ -154,8 +154,8 @@ void scoreAutoFull()
         drive_sys.PurePursuitCmd(drive_mc_slow, PurePursuit::Path({
             {.x=127, .y=30},
             {.x=109, .y=30},
-            {.x=92, .y=40},
-            {.x=92, .y=50},
+            {.x=98, .y=40},
+            {.x=98, .y=46},
         }, 8), FWD),
 
         drive_sys.TurnToHeadingCmd(90),
@@ -238,7 +238,7 @@ void scoreAutoFull()
                 drive_sys.DriveForwardCmd(40, FWD, 0.65)->withTimeout(1.5),
                 cata_sys.StopIntake(),
                 drive_sys.DriveForwardCmd(8, REV, 0.4),
-                new GPSLocalizeCommand(),
+                new GPSLocalizeCommand(SIDE),
             }
         },
         

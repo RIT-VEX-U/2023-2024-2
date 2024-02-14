@@ -61,13 +61,19 @@ class IsTriballInArea : public Condition
 void gps_localize_median();
 std::tuple<pose_t, double> gps_localize_stdev();
 
+enum FieldSide {
+    RED, BLUE
+};
+
 class GPSLocalizeCommand : public AutoCommand
 {
     public:
+    GPSLocalizeCommand(FieldSide s);
     bool run() override;
     static pose_t get_pose_rotated();
 
     private:
+    FieldSide side;
     static bool first_run;
     static int rotation;
     static const int min_rotation_radius;

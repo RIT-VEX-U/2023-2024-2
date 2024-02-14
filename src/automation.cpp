@@ -288,6 +288,8 @@ std::tuple<pose_t, double> gps_localize_stdev()
     return std::tuple<pose_t, double>(avg_filtered, dist_stdev);
 }
 
+GPSLocalizeCommand::GPSLocalizeCommand(FieldSide s): side(s) {}
+
 bool GPSLocalizeCommand::first_run = true;
 int GPSLocalizeCommand::rotation = 0;
 const int GPSLocalizeCommand::min_rotation_radius = 48;
@@ -296,6 +298,14 @@ bool GPSLocalizeCommand::run()
     // pose_t odom_pose = odom.get_position();
     vexDelay(500); // Let GPS settle
     auto [new_pose, stddev] = gps_localize_stdev();
+
+    if(side == BLUE)
+    {
+        new_pose.x = 144 - new_pose.x;
+        new_pose.y = 144 - new_pose.y;
+        new_pose.rot = new_pose.rot + 180;
+    }
+    
     odom.set_position(new_pose);
 
     printf("Localized with max variation of %f to {%f, %f, %f}\n",
