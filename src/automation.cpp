@@ -122,14 +122,14 @@ std::vector<vision::object> vision_run_filter(vision::signature &sig, vision_fil
     }
 
     // Sort objects, largest area = first in list
-    std::sort(out.begin(), out.end(), [](vision::object obj1, vision::object obj2){
-        int area1 = obj1.width * obj1.height;
-        int area2 = obj2.width * obj2.height;
-        return area1 > area2;
-    });
-
-    // Only for debugging
-    // printf("Num: %d\n", out.size());
+    if(out.size() > 1)
+    {
+        std::sort(out.begin(), out.end(), [](vision::object obj1, vision::object obj2){
+            int area1 = obj1.width * obj1.height;
+            int area2 = obj2.width * obj2.height;
+            return area1 > area2;
+        });
+    }
     
     return out;
 }
@@ -298,43 +298,46 @@ std::tuple<pose_t, double> gps_localize_stdev()
 
 bool GPSLocalizeCommand::first_run = true;
 int GPSLocalizeCommand::rotation = 0;
-const int GPSLocalizeCommand::min_rotation_radius = 36;
+const int GPSLocalizeCommand::min_rotation_radius = 48;
 bool GPSLocalizeCommand::run()
 {
-    pose_t odom_pose = odom.get_position();
+    // pose_t odom_pose = odom.get_position();
     auto [new_pose, stddev] = gps_localize_stdev();
-    Vector2D new_pose_vec(point_t{new_pose.x, new_pose.y});
+    odom.set_position(new_pose);
+    // Vector2D centrefield_gps(point_t{new_pose.x - 72, new_pose.y - 72});
+    // Vector2D centerfield_odom(point_t{.x=odom_pose.x - 72, .y=odom_pose.y - 72});
     
     // On the first localize, decide if the orientation of the field is correct.
     // If not, create a rotation to correct
-    if(first_run)
-    {
+    // if(first_run)
+    // {
         
-        for(int i = 0; i < 4; i++)
-        {
-            Vector2D rot(new_pose_vec.get_dir() + deg2rad(i * 90), new_pose_vec.get_mag());
+    //     for(int i = 0; i < 4; i++)
+    //     {
+    //         Vector2D rot(centrefield_gps.get_dir() + deg2rad(i * 90), centrefield_gps.get_mag());
+    //         printf("dist: %f\n", centerfield_odom.point().dist(rot.point()));
+    //         printf("{%f, %f}\n", rot.get_x(), rot.get_y());
+    //         // Test if the rotated vector is within an acceptable distance
+    //         // to what odometry is reporting
+    //         if (centerfield_odom.point().dist(rot.point()) < min_rotation_radius)
+    //         {
+    //             rotation = i * 90;
+    //             break;
+    //         }
+    //     }
 
-            // Test if the rotated vector is within an acceptable distance
-            // to what odometry is reporting
-            if (odom_pose.get_point().dist(rot.point()) < min_rotation_radius)
-            {
-                rotation = i * 90;
-                break;
-            }
-        }
+    //     printf("Localize init complete: Detected field rotated by %d degrees\n", rotation);
+    //     first_run = false;
+    // }
 
-        printf("Localize init complete: Detected field rotated by %d degrees", rotation);
-        first_run = false;
-    }
-
-    Vector2D rot(new_pose_vec.get_dir() + deg2rad(rotation), new_pose_vec.get_mag());
-    odom.set_position(pose_t{
-        .x = rot.get_x(),
-        .y = rot.get_y(),
-        .rot = new_pose.rot
-    });
-    printf("Localized with variance of %f, rotated by %f degrees, to {%f, %f, %f}\n",
-            stddev, rotation, new_pose.x, new_pose.y, new_pose.rot);
+    // Vector2D rot(centrefield_gps.get_dir() + deg2rad(rotation), centrefield_gps.get_mag());
+    // odom.set_position(pose_t{
+    //     .x = rot.get_x() + 72,
+    //     .y = rot.get_y() + 72,
+    //     .rot = new_pose.rot
+    // });
+    printf("Localized with variance of %f to {%f, %f, %f}\n",
+            stddev, new_pose.x, new_pose.y, new_pose.rot);
     return true;
 }
 
@@ -384,7 +387,7 @@ void matchload_1(std::function<bool()> enable)
             }
         },
         drive_sys.DriveForwardCmd(14, REV, 0.6)->withTimeout(1),
-        new FunctionCommand([](){cata_sys.send_command(CataSys::Command::StopFiring); return true;}),
+        // new FunctionCommand([](){cata_sys.send_command(CataSys::Command::StopFiring); return true;}),
         cata_sys.IntakeFully(),
         drive_sys.DriveForwardCmd(14, FWD, 0.6)->withTimeout(1),
     };

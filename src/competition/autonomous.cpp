@@ -165,7 +165,7 @@ void scoreAutoAWP()
             {.x=127, .y=38},
         }, 8), directionType::fwd, 0.4),
         drive_sys.TurnToHeadingCmd(90, 0.4),
-        cata_sys.Outtake(),
+        cata_sys.Unintake(),
         new DelayCommand(500),
         drive_sys.DriveForwardCmd(10, FWD, 0.8)->withTimeout(1),
         cata_sys.StopIntake(),
@@ -188,7 +188,7 @@ void scoreAutoAWP()
         drive_sys.TurnToHeadingCmd(61, 0.4),
         drive_sys.DriveToPointCmd({.x=124, .y=35}, FWD, .4),
         drive_sys.TurnToHeadingCmd(90, 0.4),
-        cata_sys.Outtake(),
+        cata_sys.Unintake(),
         new DelayCommand(500),
         drive_sys.DriveForwardCmd(10, FWD, 0.8)->withTimeout(1),
         cata_sys.StopIntake(),
@@ -210,37 +210,8 @@ void scoreAutoAWP()
     
 }
 
-AutoCommand *scoreFromMiddle()
-{
-    return new InOrder{
-        // grab from bar
-        drive_sys.TurnToHeadingCmd(0, 0.4),
-        cata_sys.IntakeToHold(), 
-        (new VisionTrackTriballCommand())->withTimeout(3),
-        drive_sys.DriveForwardCmd(0, REV, 0.4),
-
-        // Score in goal
-        drive_sys.TurnToHeadingCmd(0, 0.4),
-        drive_sys.DriveToPointCmd({.x=0, .y=0}, REV, 0.4),
-        drive_sys.TurnToHeadingCmd(0, 0.4),
-        cata_sys.Outtake(),
-        drive_sys.DriveForwardCmd(0, FWD, 0.6)->withTimeout(1), 
-
-        // Reverse & localize
-        drive_sys.DriveForwardCmd(0, REV, 0.4),
-        gps_reset(),
-
-        // drive to a neutral position
-        drive_sys.TurnToHeadingCmd(0, 0.4),
-        drive_sys.DriveToPointCmd({.x=0, .y=0}, REV, 0.4),
-        drive_sys.TurnToHeadingCmd(0, 0.4),
-
-    };
-}
-
 void scoreAutoFull()
 {
-    gps_sensor.heading(); // funky gps not reading sometimes
     DebugCommand *tempend = new DebugCommand();
 
     CommandController cmd{
@@ -257,7 +228,7 @@ void scoreAutoFull()
             {.x=124, .y=38},
         }, 8), directionType::fwd, 0.4),
         drive_sys.TurnToHeadingCmd(90, 0.4),
-        cata_sys.Outtake(),
+        cata_sys.Unintake(),
         new DelayCommand(500),
         drive_sys.DriveForwardCmd(10, FWD, 0.8)->withTimeout(1),
         cata_sys.StopIntake(),
@@ -281,7 +252,7 @@ void scoreAutoFull()
         drive_sys.TurnToHeadingCmd(61, 0.4),
         drive_sys.DriveForwardCmd(9, FWD, 0.4),
         drive_sys.TurnToHeadingCmd(90, 0.4),
-        cata_sys.Outtake(),
+        cata_sys.Unintake(),
         new DelayCommand(500),
         drive_sys.DriveForwardCmd(16, FWD, 0.8)->withTimeout(1),
         cata_sys.StopIntake(),
@@ -322,7 +293,7 @@ void scoreAutoFull()
                 new VisionTrackTriballCommand(),
                 // Back up & score
                 drive_sys.TurnToHeadingCmd(0, 0.5),
-                cata_sys.Outtake(),
+                cata_sys.Unintake(),
                 drive_sys.DriveForwardCmd(12, FWD, 0.8)->withTimeout(1),
                 cata_sys.StopIntake(),
 
@@ -351,7 +322,7 @@ void scoreAutoFull()
                 cata_sys.IntakeToHold(),
                 new VisionTrackTriballCommand(),
                 drive_sys.TurnToHeadingCmd(0, 0.4),
-                cata_sys.Outtake(),
+                cata_sys.Unintake(),
                 drive_sys.DriveForwardCmd(24, FWD, 0.8)->withTimeout(2),
                 cata_sys.StopIntake(),
             }
@@ -374,7 +345,7 @@ void scoreAutoFull()
                 new Async{
                     new InOrder {
                         new DelayCommand(200),
-                        cata_sys.Outtake()
+                        cata_sys.Unintake()
                     }
                 },
                 drive_sys.DriveForwardCmd(40, FWD, 0.65)->withTimeout(1.5),
@@ -440,7 +411,6 @@ void skills()
         cata_sys.IntakeFully(),
         drive_sys.DriveToPointCmd({.x=13.8, .y=130.3}, FWD, 0.5),
 
-        new FunctionCommand([](){cata_sys.send_command(CataSys::Command::StopFiring); return true;}),
         cata_sys.IntakeFully(),
         // Matchloading phase
         (new RepeatUntil(InOrder{
@@ -458,7 +428,6 @@ void skills()
             // cata_sys.Fire(),
             // new DelayCommand(300),
             // drive_sys.TurnToHeadingCmd(135, 130.3)->withTimeout(1),
-            new FunctionCommand([](){cata_sys.send_command(CataSys::Command::StopFiring); return true;}),
             cata_sys.IntakeFully(),
             drive_sys.DriveForwardCmd(8, FWD, 0.5)->withTimeout(1),
             
@@ -515,7 +484,7 @@ void skills()
         //Wall Align
         drive_sys.TurnToHeadingCmd(90, 0.5)->withTimeout(1),
         drive_sys.DriveForwardCmd(100, FWD, 0.25)->withTimeout(3),
-        cata_sys.Outtake(),
+        cata_sys.Unintake(),
         drive_sys.TurnDegreesCmd(90, .5)->withTimeout(1),
         drive_sys.TurnDegreesCmd(-90, .5)->withTimeout(1),
         drive_sys.DriveForwardCmd(100, FWD, 0.25)->withTimeout(2),

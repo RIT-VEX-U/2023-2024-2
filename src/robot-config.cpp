@@ -179,9 +179,22 @@ robot_specs_t robot_cfg = {
         .d = .001
     } };
 
+PID::pid_config_t pc = {
+    .p = 1,
+    // .i = 2,
+    .deadband = 2,
+    .on_target_time = 0.3
+};
+
+FeedForward::ff_config_t ffc = {
+    .kG = -2
+};
+
+PIDFF cata_pid(pc, ffc);
+
 OdometryTank odom{ left_motors, right_motors, robot_cfg, &imu };
 TankDrive drive_sys(left_motors, right_motors, robot_cfg, &odom);
-CataSys cata_sys(intake_watcher, cata_pot, cata_watcher, cata_motors, intake_roller, intake_combine);
+CataSys cata_sys(intake_watcher, cata_pot, cata_watcher, cata_motors, intake_combine, intake_roller, cata_pid, DropMode::Unnecessary);
 
 // ================ UTILS ================
 std::vector<screen::Page*> pages;

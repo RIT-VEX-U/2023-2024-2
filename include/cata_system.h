@@ -1,57 +1,47 @@
 
 #pragma once
-#include "vex.h"
 #include "../core/include/subsystems/custom_encoder.h"
-#include "../core/include/utils/command_structure/auto_command.h"
 #include "../core/include/subsystems/screen.h"
+#include "../core/include/utils/command_structure/auto_command.h"
+#include "../core/include/utils/state_machine.h"
+#include "cata/cata.h"
+#include "cata/intake.h"
+#include "vex.h"
 
-class CataSys
-{
-public:
-    enum class Command
-    {
-        IntakeIn,    // all mutually exclusive or else we get DQed or jam the cata
-        IntakeHold,  // all mutually exclusive or else we get DQed or jam the cata
-        StartFiring, // all mutually exclusive or else we get DQed or jam the cata
-        StopFiring,
+class CataSys {
+  public:
+    enum class Command {
+        IntakeIn,
+        IntakeHold,
         StopIntake,
         IntakeOut,
-        StartMatchLoad,
-        StopMatchLoad,
-        DisableCata
-    };
-    enum class IntakeType
-    {
-        In,
-        Out,
-        Hold,
+        StartDropping,
+        StartFiring,
+        ToggleCata,
     };
 
-    enum CataState
-    {
-        CHARGING,
-        READY,
-        FIRING,
-        DISABLE
-    };
-
-    CataSys(vex::distance &intake_watcher, vex::pot &cata_pot, vex::optical &cata_watcher, vex::motor_group &cata_motor, vex::motor &intake_upper, vex::motor &intake_lower);
+    CataSys(vex::distance &intake_watcher, vex::pot &cata_pot,
+            vex::optical &cata_watcher, vex::motor_group &cata_motor,
+            vex::motor &intake_upper, vex::motor &intake_lower,
+            PIDFF &cata_feedback, DropMode drop);
     void send_command(Command cmd);
-    CataState get_state() const;
     bool can_fire() const;
+    // Returns true when the cata system is finished dropping
+    bool still_dropping();
 
     // Autocommands
     AutoCommand *Fire();
+    AutoCommand *StopIntake();
     AutoCommand *IntakeToHold();
     AutoCommand *IntakeFully();
     AutoCommand *WaitForIntake();
-    AutoCommand *Outtake();
-    AutoCommand *StopIntake();
+    AutoCommand *WaitForHold();
+    AutoCommand *Unintake();
 
     // Page
     screen::Page *Page();
 
-private:
+  private:
     // configuration
     vex::distance &intake_watcher;
     vex::pot &cata_pot;
@@ -59,17 +49,7 @@ private:
     vex::motor_group &cata_motor;
     vex::motor &intake_upper;
     vex::motor &intake_lower;
-
-    // running
-    vex::task runner;
-    mutable vex::mutex control_mut; // I am sorry for my crimes. However, get_state() needs to lock this but is conceptually constant.
-    // THESE SHOULD ONLY BE ACCESSED BEHIND THE MUTEX
-    CataState state;
-    bool firing_requested;
-    bool intaking_requested;
-    bool matchload_requested;
-    bool disable_requested;
-    IntakeType intake_type;
-    friend int thread_func(void *void_cata);
+    CataOnlySys cata_sys;
+    IntakeSys intake_sys;
     friend class CataSysPage;
 };

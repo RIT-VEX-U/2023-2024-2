@@ -17,7 +17,6 @@ void opcontrol()
     // ================ TUNING CODE (Disable when not testing) ================
     testing();
 
-
     // ================ INIT ================
     static bool enable_matchload = false;
 
@@ -39,7 +38,7 @@ void opcontrol()
     // -- Left - quick turn (Left)
 
     con.ButtonL2.pressed([]() { cata_sys.send_command(CataSys::Command::StartFiring); });
-    con.ButtonL2.released([]() { cata_sys.send_command(CataSys::Command::StopFiring); });
+    // con.ButtonL2.released([]() { cata_sys.send_command(CataSys::Command::StopFiring); });
 
     con.ButtonR1.pressed([]() { cata_sys.send_command(CataSys::Command::IntakeIn); });
     con.ButtonR1.released([](){ cata_sys.send_command(CataSys::Command::StopIntake); });
@@ -57,7 +56,7 @@ void opcontrol()
         right_wing.set(wing_isdown); 
     });
 
-    con.ButtonUp.pressed([]() { enable_matchload = !enable_matchload; });
+    // con.ButtonUp.pressed([]() { enable_matchload = !enable_matchload; });
     pose_t start_pose = { .x = 16, .y = 144 - 16, .rot = 135 };
 
     static std::atomic<bool> disable_drive(false);
@@ -105,6 +104,9 @@ void opcontrol()
         brake_mode_toggled = !brake_mode_toggled;
     });
 
+    con.ButtonUp.pressed([](){
+        cata_sys.send_command(CataSys::Command::ToggleCata);
+    });
 
 
     // ================ PERIODIC ================
@@ -213,28 +215,29 @@ void testing()
 {
     // ================ AUTONOMOUS TESTING ================
     // autonomous(); 
+    cata_sys.send_command(CataSys::Command::ToggleCata);
 
     while(imu.isCalibrating() || gps_sensor.isCalibrating()) {vexDelay(20);}
 
     static std::atomic<bool> disable_drive(false);
 
-    cata_sys.send_command(CataSys::Command::DisableCata);
+    // // ================ ODOMETRY TESTING ================
 
-    // ================ ODOMETRY TESTING ================
-
-    // Reset encoder odometry to 0,0,90 with button X
+    // // Reset encoder odometry to 0,0,90 with button X
     con.ButtonX.pressed([](){
-        odom.set_position();
+        odom.set_position({28, 47, 0});
     });
 
-    // Test localization with button Y
+    // // Test localization with button Y
     con.ButtonY.pressed([](){
+        disable_drive = true;
         GPSLocalizeCommand().run();
+        disable_drive = false;
     });
 
-    // ================ DRIVE TESTING ================
+    // // ================ DRIVE TESTING ================
 
-    // While *holding* button A, tune drive-to-point
+    // // While *holding* button A, tune drive-to-point
     con.ButtonA.pressed([](){
         disable_drive = true;
 
@@ -248,7 +251,7 @@ void testing()
         disable_drive = false;
     });
 
-    // While *holding* button B, tune turn-to-heading
+    // // While *holding* button B, tune turn-to-heading
     con.ButtonB.pressed([](){
         disable_drive = true;
 
@@ -262,11 +265,14 @@ void testing()
         disable_drive = false;
     });
 
-    // ================ VISION TESTING ================
+    // // ================ VISION TESTING ================
     con.ButtonRight.pressed([](){
         vision_light.set(!vision_light.value());
     });
 
+    con.ButtonLeft.pressed([](){
+        cata_sys.send_command(CataSys::Command::ToggleCata);
+    });
 
     while(true)
     {
@@ -280,11 +286,20 @@ void testing()
         pose_t odom_pose = odom.get_position();
         pose_t gps_pose = GPSLocalizeCommand::get_pose_rotated();
 
-        printf("ODO: {%.2f, %.2f, %.2f} | GPS: {%.2f, %.2f, %.2f}\n",
-                odom_pose.x, odom_pose.y, odom_pose.rot, gps_pose.x, gps_pose.y, gps_pose.rot);
+        // printf("ODO: {%.2f, %.2f, %.2f} | GPS: {%.2f, %.2f, %.2f}\n",
+        //         odom_pose.x, odom_pose.y, odom_pose.rot, gps_pose.x, gps_pose.y, gps_pose.rot);
 
         auto objs = vision_run_filter(TRIBALL);
-        printf("CAM: N:%d | {%d, %d}, A:%d\n", 
-                objs.size(), objs[0].centerX, objs[0].centerY, objs[0].width * objs[0].height);
+        int n=objs.size(), x=0, y=0, a=0;
+        if(n > 0)
+        {
+            x = objs[0].centerX;
+            y = objs[0].centerY;
+            a = objs[0].width * objs[0].height;
+        }
+        // printf("CAM: N:%d | {%d, %d}, A:%d\n", n, x, y, a);
+        // printf("Pot: %f\n", cata_pot.angle(vex::deg));
+
+        vexDelay(20);
     }
 }
