@@ -143,7 +143,7 @@ void opcontrol()
 void testing()
 {
     // ================ AUTONOMOUS TESTING ================
-    // autonomous(); 
+    autonomous(); 
     cata_sys.send_command(CataSys::Command::ToggleCata);
 
     while(imu.isCalibrating() || gps_sensor.isCalibrating()) {vexDelay(20);}

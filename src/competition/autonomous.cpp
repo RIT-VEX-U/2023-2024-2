@@ -90,10 +90,10 @@ class DebugCommand : public AutoCommand
             //     gps_sensor.yPosition(distanceUnits::in)+72, 
             //     gps_sensor.heading(), gps_sensor.quality());
             cam.takeSnapshot(TRIBALL);
-            // printf("X: %d, Y: %d, A: %d, Ratio: %f\n", 
-            //     cam.largestObject.centerX, cam.largestObject.centerY, 
-            //     cam.largestObject.width * cam.largestObject.height,
-            //     (double)cam.largestObject.width / (double)cam.largestObject.height);
+            printf("X: %d, Y: %d, A: %d, Ratio: %f\n", 
+                cam.largestObject.centerX, cam.largestObject.centerY, 
+                cam.largestObject.width * cam.largestObject.height,
+                (double)cam.largestObject.width / (double)cam.largestObject.height);
             vexDelay(100);
         }
         return false;
@@ -122,26 +122,24 @@ void scoreAutoFull()
         new DelayCommand(500),
         drive_sys.DriveForwardCmd(10, FWD)->withTimeout(1),
         cata_sys.StopIntake(),
-        new GPSLocalizeCommand(), // 126, 39, 90 ish
-
+        // new GPSLocalizeCommand(), // 126, 39, 90 ish 
         // Back up & get alliance ball
+        drive_sys.DriveForwardCmd(drive_mc_slow, 4, REV),
         drive_sys.TurnToHeadingCmd(230),
-        tempend,
         cata_sys.IntakeToHold(),
         drive_sys.PurePursuitCmd(drive_mc_slow, PurePursuit::Path({
-            {.x=128, .y=38},
-            {.x=128, .y=26},
-            {.x=120, .y=17}
-        }, 4), FWD),
-        drive_sys.TurnToHeadingCmd(310),
-        cata_sys.WaitForIntake()->withTimeout(3),
-        tempend,
+            {.x=124, .y=43},
+            {.x=124, .y=35},
+            {.x=129, .y=26}
+        }, 4), FWD)->withTimeout(1),
+        cata_sys.WaitForHold()->withTimeout(3),
+
         drive_sys.DriveForwardCmd(4, REV, 0.4),
+        drive_sys.TurnToHeadingCmd(48),
+        drive_sys.DriveToPointCmd({131, 40}, FWD),
+        drive_sys.TurnToHeadingCmd(90),
         
         // Score alliance ball
-        drive_sys.TurnToHeadingCmd(61),
-        drive_sys.DriveForwardCmd(9, FWD),
-        drive_sys.TurnToHeadingCmd(90),
         cata_sys.Unintake(),
         new DelayCommand(500),
         drive_sys.DriveForwardCmd(16, FWD)->withTimeout(1),
@@ -149,25 +147,25 @@ void scoreAutoFull()
         drive_sys.DriveForwardCmd(8, REV)->withTimeout(1),
         new GPSLocalizeCommand(),
 
-        // BEGIN UNTESTED
-        
-
         // Drive into position
-        drive_sys.TurnToHeadingCmd(180, 0.4),
-        tempend,
+        drive_sys.TurnToHeadingCmd(180),
+
         new FunctionCommand(light_on),
-        drive_sys.PurePursuitCmd(PurePursuit::Path({
-            {.x=125, .y=32},
-            {.x=106, .y=35},
-            {.x=106, .y=52},
-        }, 8), FWD, 0.3),
+        drive_sys.PurePursuitCmd(drive_mc_slow, PurePursuit::Path({
+            {.x=127, .y=30},
+            {.x=109, .y=30},
+            {.x=92, .y=40},
+            {.x=92, .y=50},
+        }, 8), FWD),
+
+        drive_sys.TurnToHeadingCmd(90),
 
         // grab from center (closest to goal)
         // TODO make sure we don't cross the line! (Async command?)
         
         new Branch {
             new VisionObjectExists(vision_filter_s{
-                    .min_area = 4500,
+                    .min_area = 2000,
                     .max_area = 100000,
                     .aspect_low = 0.5,
                     .aspect_high = 2,
@@ -178,19 +176,18 @@ void scoreAutoFull()
             }), // Maybe add filter for left/right limits?
             new InOrder{ // Object doesn't exist, big sad (turn & continue on)
                 new FunctionCommand(light_on),
-                drive_sys.TurnToHeadingCmd(123, 0.4)
+                drive_sys.TurnToHeadingCmd(123),
             },
             new InOrder { // Object exists, go get 'em!
                 cata_sys.IntakeToHold(),
                 new VisionTrackTriballCommand(),
                 // Back up & score
-                drive_sys.TurnToHeadingCmd(0, 0.5),
+                drive_sys.TurnToHeadingCmd(0),
                 cata_sys.Unintake(),
-                drive_sys.DriveForwardCmd(12, FWD, 0.8)->withTimeout(1),
+                drive_sys.DriveForwardCmd(18, FWD, 0.8)->withTimeout(1),
                 cata_sys.StopIntake(),
 
                 // Position for next ball
-                new GPSLocalizeCommand(),
                 drive_sys.DriveForwardCmd(8, REV, 0.4)->withTimeout(1),
                 new FunctionCommand(light_on),
                 drive_sys.TurnToHeadingCmd(168, 0.4),
@@ -198,7 +195,7 @@ void scoreAutoFull()
         },
         new Branch {
             new VisionObjectExists(vision_filter_s{
-                    .min_area = 3500,
+                    .min_area = 2000,
                     .max_area = 100000,
                     .aspect_low = 0.5,
                     .aspect_high = 2,
@@ -215,15 +212,13 @@ void scoreAutoFull()
                 new VisionTrackTriballCommand(),
                 drive_sys.TurnToHeadingCmd(0, 0.4),
                 cata_sys.Unintake(),
-                drive_sys.DriveForwardCmd(24, FWD, 0.8)->withTimeout(2),
+                drive_sys.DriveForwardCmd(36, FWD, 0.8)->withTimeout(1),
                 cata_sys.StopIntake(),
+                drive_sys.DriveForwardCmd(8, REV),
             }
         },
         
-        new GPSLocalizeCommand(),
-
         // Grab triball along wall
-        drive_sys.DriveForwardCmd(8, REV, 0.4),
         drive_sys.TurnToHeadingCmd(214, 0.4),
         cata_sys.IntakeToHold(),
         new VisionTrackTriballCommand(),
@@ -246,12 +241,11 @@ void scoreAutoFull()
                 new GPSLocalizeCommand(),
             }
         },
+        
         // complete AWP
-        drive_sys.TurnToHeadingCmd(230, 0.4),
-        drive_sys.DriveToPointCmd({.x=99, .y=49}, FWD, 0.25)->withTimeout(3),
-        drive_sys.DriveForwardCmd(12, FWD, 0.2)->withTimeout(3),
-        tempend,
-
+        drive_sys.TurnToHeadingCmd(230),
+        drive_sys.DriveToPointCmd({.x=75, .y=34}, FWD)->withTimeout(3),
+        drive_sys.DriveForwardCmd(48, FWD, 0.2)->withTimeout(3),
     };
 
     cmd.run();
