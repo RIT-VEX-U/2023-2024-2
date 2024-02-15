@@ -5,6 +5,7 @@ bool intake_can_be_enabled(double cata_pos) {
                                cata_pos < intake_enable_upper_threshold);
 }
 bool CataOnlySys::intaking_allowed() {
+  bool cata_in_position = intake_can_be_enabled(pot.angle(vex::degrees));
   return current_state() == CataOnlyState::ReadyToFire &&
          !cata_watcher.isNearObject();
 }
