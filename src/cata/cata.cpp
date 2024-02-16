@@ -5,11 +5,11 @@ bool intake_can_be_enabled(double cata_pos) {
                                cata_pos < intake_enable_upper_threshold);
 }
 bool CataOnlySys::intaking_allowed() {
-    double cata_pos = pot.angle(vex::deg);
+  double cata_pos = pot.angle(vex::deg);
 
-    return ((cata_pos == 0.0) || (cata_pos > inake_enable_lower_threshold &&
-                                  cata_pos < intake_enable_upper_threshold) &&
-                                     !cata_watcher.isNearObject());
+  return ((cata_pos == 0.0) || (cata_pos > inake_enable_lower_threshold &&
+                                cata_pos < intake_enable_upper_threshold) &&
+                                   !cata_watcher.isNearObject());
 }
 
 class CataOff : public CataOnlySys::State {
@@ -121,15 +121,19 @@ CataOnlySys::State *WaitingForDrop::respond(CataOnlySys &sys,
 }
 
 CataOnlySys::State *Reloading::respond(CataOnlySys &sys, CataOnlyMessage m) {
-    if (m == CataOnlyMessage::DoneReloading) {
-        return new ReadyToFire();
-    } else if (m == CataOnlyMessage::DisableCata) {
-        return new CataOff();
-    } else if (m == CataOnlyMessage::Fire) {
-        return new Firing();
+  if (m == CataOnlyMessage::DoneReloading) {
+    return new ReadyToFire();
+  } else if (m == CataOnlyMessage::DisableCata) {
+    return new CataOff();
+  } else if (m == CataOnlyMessage::Fire) {
+    if (sys.cata_watcher.isNearObject()) {
+      return new Firing();
+    } else {
+      return this;
     }
-    // Ignore other messages
-    return this;
+  }
+  // Ignore other messages
+  return this;
 }
 CataOnlySys::State *ReadyToFire::respond(CataOnlySys &sys, CataOnlyMessage m) {
   if (m == CataOnlyMessage::Fire) {
