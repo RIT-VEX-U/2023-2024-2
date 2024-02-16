@@ -71,6 +71,7 @@ struct Dropping : IntakeSys::State {
         sys.intake_upper.spin(vex::reverse, 12.0, vex::volt);
     }
     IntakeSys::MaybeMessage work(IntakeSys &sys) override {
+        sys.intake_upper.spin(vex::reverse, 12.0, vex::volt);
         if (drop_timer.value() > intake_drop_seconds) {
             return IntakeMessage::Dropped;
         }
@@ -86,9 +87,18 @@ struct Dropping : IntakeSys::State {
     vex::timer drop_timer;
 };
 struct Intaking : IntakeSys::State {
-    void entry(IntakeSys &sys) override {
-        sys.intake_upper.spin(vex::fwd, intake_upper_volt, vex::volt);
-        sys.intake_lower.spin(vex::fwd, intake_lower_volt, vex::volt);
+    void entry(IntakeSys &sys) override {}
+    IntakeSys::MaybeMessage work(IntakeSys &sys) override {
+        if (!sys.can_intake()) {
+            sys.intake_upper.spin(vex::fwd, 0, vex::volt);
+            sys.intake_lower.spin(vex::fwd, 0, vex::volt);
+            return {};
+        } else {
+            sys.intake_upper.spin(vex::fwd, intake_upper_volt, vex::volt);
+            sys.intake_lower.spin(vex::fwd, intake_lower_volt, vex::volt);
+        }
+
+        return {};
     }
     void exit(IntakeSys &sys) override {
         sys.intake_upper.stop(vex::brakeType::coast);
@@ -133,6 +143,10 @@ struct Outtaking : IntakeSys::State {
 IntakeSys::State *IntakeWaitForDrop::respond(IntakeSys &sys, IntakeMessage m) {
     if (m == IntakeMessage::Drop) {
         return new Dropping();
+    } else if (m == IntakeMessage::Outtake) {
+        return new Outtaking();
+    } else if (m == IntakeMessage::Intake) {
+        return new Intaking();
     }
     return this;
 }
@@ -190,9 +204,10 @@ IntakeSys::State *Outtaking::respond(IntakeSys &sys, IntakeMessage m) {
 
 IntakeSys::IntakeSys(vex::distance &intake_watcher, vex::motor &intake_lower,
                      vex::motor &intake_upper, std::function<bool()> can_intake,
-                     DropMode drop)
+                     std::function<bool()> ball_in_cata, DropMode drop)
     : StateMachine(drop == DropMode::Required
                        ? (IntakeSys::State *)(new IntakeWaitForDrop())
                        : (IntakeSys::State *)(new Stopped())),
       intake_watcher(intake_watcher), intake_lower(intake_lower),
-      intake_upper(intake_upper), can_intake(can_intake) {}
+      intake_upper(intake_upper), can_intake(can_intake),
+      ball_in_cata(ball_in_cata) {}

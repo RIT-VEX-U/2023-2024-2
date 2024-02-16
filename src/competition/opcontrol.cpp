@@ -15,7 +15,7 @@
 void opcontrol()
 {
     // ================ TUNING CODE (Disable when not testing) ================
-    testing();
+    // testing();
 
     // ================ INIT ================
     static bool enable_matchload = false;
@@ -222,7 +222,7 @@ void testing()
             a = objs[0].width * objs[0].height;
         }
         // printf("CAM: N:%d | {%d, %d}, A:%d\n", n, x, y, a);
-        // printf("Pot: %f\n", cata_pot.angle(vex::deg));
+        printf("Pot: %f\n", cata_pot.angle(vex::deg));
 
         vexDelay(20);
     }

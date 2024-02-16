@@ -251,151 +251,138 @@ void scoreAutoFull()
     cmd.run();
 }
 
-void skills()
+FunctionCondition *is_in_cata()
 {
-    FunctionCommand *intakeToCata = new FunctionCommand([](){
-        drive_sys.drive_tank(0.15, 0.15);
-        // Run intake in, periodically push out in case it's caught.
-        // static vex::timer intake_tmr;
-        // if(intake_tmr.time(sec) > 1)
-        //     cata_sys.send_command(CataSys::Command::IntakeOut);
-        // else if( intake_tmr.time(sec) > 1.5)
-        //     intake_tmr.reset();
-        // else
-        //     cata_sys.send_command(CataSys::Command::IntakeIn);
-
-        // Only return when the ball is in the bot
+    return new FunctionCondition([](){
         return cata_watcher.isNearObject();
     });
+}
 
-    FunctionCommand *tempend = new FunctionCommand([](){
-        drive_sys.stop();
-        cata_sys.send_command(CataSys::Command::StopIntake);
-        while(true)
-        {
-            cata_sys.send_command(CataSys::Command::StopIntake);
-            double f = con.Axis3.position() / 200.0;
-            double s = con.Axis1.position() / 200.0;
-            drive_sys.drive_arcade(f, s, 1, TankDrive::BrakeType::None);
-            pose_t pos = odom.get_position();
-            printf("X: %.2f, Y: %.2f, R:%.2f\n", pos.x, pos.y, pos.rot);
-            vexDelay(100);
-        }
-        return false;
-    });
+void skills()
+{
+    auto tempend = new DebugCommand();
 
     CommandController cmd{
-        odom.SetPositionCmd({.x=18, .y=126, .rot=135}),
-        
-        // 1 - Turn and shoot preload
-        // drive_sys.TurnToHeadingCmd(160, .5),
-        cata_sys.Fire(),
-        new DelayCommand(800),
-
-        // 2 - Turn to matchload zone & begin matchloading
-        drive_sys.TurnToHeadingCmd(135, .5),
-        cata_sys.IntakeFully(),
-        drive_sys.DriveToPointCmd({.x=13.8, .y=130.3}, FWD, 0.5),
-
-        cata_sys.IntakeFully(),
-        // Matchloading phase
+        odom.SetPositionCmd({.x=19, .y=117, .rot=135}), // GPS says starting pt is 
         (new RepeatUntil(InOrder{
-            intakeToCata->withTimeout(3),
-            cata_sys.Fire(),
-            // new Async{
-            //     new InOrder{
-            //         new DelayCommand(300),
-            //         cata_sys.Fire(),
-            //     }
-            // },
-            // drive_sys.DriveToPointCmd({.x=18, .y=126}, REV, 0.5)->withTimeout(1),
-            drive_sys.DriveForwardCmd(8, REV, 0.5)->withTimeout(1),
-            // drive_sys.TurnToHeadingCmd(160, 0.5)->withTimeout(1),
-            // cata_sys.Fire(),
-            // new DelayCommand(300),
-            // drive_sys.TurnToHeadingCmd(135, 130.3)->withTimeout(1),
+
+            // Matchloading!
             cata_sys.IntakeFully(),
-            drive_sys.DriveForwardCmd(8, FWD, 0.5)->withTimeout(1),
+            // Push against bar slowly & wait for triball to load
+            new FunctionCommand([](){
+                drive_sys.drive_tank(0.3, 0.3);
+                return true;
+            }),
+
+            // Up against thte wall, reset odometry
+            cata_sys.WaitForIntake()->withTimeout(2),
+            odom.SetPositionCmd({.x=15, .y=121, .rot = 135}),
+
+            new FunctionCommand([](){
+                vex::task([](){
+                    vexDelay(600);
+                    cata_sys.send_command(CataSys::Command::StartFiring);
+                    return 0;
+                });
+                
+                return true;
+            }),
+
+            // Drive to firing position
+            drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
+                {.x=15, .y=121},
+                {.x=17, .y=120},
+                {.x=19, .y=120},
+                {.x=27, .y=120},
+            }, 4), REV, 0.3),
             
-        }, new FunctionCondition([](){return false;})))
-            ->withTimeout(45),
+            drive_sys.DriveForwardCmd(8, FWD)->withTimeout(3),
+            drive_sys.TurnToHeadingCmd(135)->withTimeout(3),
+            drive_sys.DriveForwardCmd(6, FWD)->withTimeout(3),
+                        
+            // drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
+            //     {.x=27, .y=120},
+            //     {.x=23, .y=120},
+            //     {.x=20, .y=120},
+            //     {.x=16, .y=125},
+            // }, 4), FWD, 0.3)->withTimeout(1),
 
-        // Last preload
-        drive_sys.DriveToPointCmd({.x=18, .y=126}, FWD, 0.5)->withTimeout(1),
-        drive_sys.TurnToHeadingCmd(160, 0.5)->withTimeout(1),
-        cata_sys.Fire(),
-        new DelayCommand(300),
-        cata_sys.StopIntake(),
-        drive_sys.TurnToHeadingCmd(204, 0.5)->withTimeout(1),
-
-        // Drive through "The Passage" & push into side of goal
-        // Push into side of goal
-        // new Parallel{
-        //     new InOrder{
-        //         new WaitUntilCondition(new FunctionCondition([](){
-        //             return odom.get_position().x > 100;
-        //         })),
-        //         new WingCmd(RIGHT, true)
+            // drive_sys.DriveForwardCmd(8, REV),
+            // drive_sys.TurnToHeadingCmd(200),
+            // drive_sys.DriveForwardCmd(6, REV),
+            // drive_sys.DriveForwardCmd(6, FWD),
+            // drive_sys.TurnToHeadingCmd(135),
+            // drive_sys.DriveForwardCmd(8, FWD),
+            // May need a delay here, we'll see
+            // Start intake & drive back to loading area
+            cata_sys.IntakeFully(),
+           
+            // Done, go back to beginning of matchloading
+            
+        }, new FunctionCondition([](){ return false; })))->withTimeout(45),
+        // If there is a ball left in the catapult, fire it & THEN push
+        // new Branch{
+        //     is_in_cata(),
+        //     new InOrder { // FALSE
+        //         // do nothing
         //     },
-        cata_sys.StopIntake(),
-        drive_sys.PurePursuitCmd(PurePursuit::Path({
-            {.x=19, .y=133},
-            {.x=40, .y=136},
-            {.x=92, .y=136},
-            {.x=108, .y=128},
-            {.x=119, .y=117},
-            {.x=123, .y=98},
-            }, 8), REV, .5)->withTimeout(4),
+        //     // Copied from above TRUE
+        //     new Async(new InOrder{
+        //         new WaitUntilCondition(new FunctionCondition([](){
+        //             return odom.get_position().y > 0;
+        //         })),
+        //         cata_sys.Fire()
+        //     })
         // },
 
-        // FULL SPEED AHEAD
-        drive_sys.DriveForwardCmd(18, FWD, 0.5)->withTimeout(1),
-        drive_sys.TurnToHeadingCmd(150, 0.5),
-        new WingCmd(RIGHT, true),
-        drive_sys.TurnToHeadingCmd(90, 0.5),
-        drive_sys.DriveForwardCmd(48, REV, 0.8)->withTimeout(1),
+        // Deploy wing while driving after crossing X value
+        // May not be needed for side goal
+        new Async(new InOrder{
+            new WaitUntilCondition(new FunctionCondition([](){
+                return odom.get_position().x > 90;
+            })),
+            new WingCmd(RIGHT, true),
+             new WingCmd(LEFT, true),
+            new WaitUntilCondition(new FunctionCondition([](){
+                return odom.get_position().x > 125;
+            })),
+            new WingCmd(RIGHT, false),
+            new WingCmd(LEFT, false),
+        }),
+
+        // Drive SLOWLY under bar (don't push just yet)
+        drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
+            {.x=15, .y=122},
+            {.x=21, .y=119},
+            {.x=29, .y=121},
+            {.x=41, .y=125},
+            {.x=71, .y=127},
+            {.x=98, .y=126},
+            {.x=117, .y=120},
+            {.x=129, .y=110},
+        }, 8), REV, 0.4),
+        new WingCmd(RIGHT, false),
         
-        // AGAIN!
-        drive_sys.DriveForwardCmd(18, FWD, 0.5)->withTimeout(1),
-        // drive_sys.DriveForwardCmd(48, REV, 0.8)->withTimeout(1),
+        drive_sys.TurnToHeadingCmd(90),
 
-        // // AGAIN!!!!
-        // drive_sys.DriveForwardCmd(18, FWD, 0.5)->withTimeout(1),
-        // drive_sys.DriveForwardCmd(48, REV, 0.8)->withTimeout(1),
+        // Ram, back up & ram again
+        drive_sys.DriveForwardCmd(drive_pid, 24, REV, 0.8)->withTimeout(1),
+        drive_sys.DriveForwardCmd(18, FWD),
+        drive_sys.TurnToHeadingCmd(100),
+        drive_sys.DriveForwardCmd(drive_pid, 24, REV, 0.8)->withTimeout(1),
+        drive_sys.DriveForwardCmd(12, FWD),
 
-        // drive_sys.PurePursuitCmd(PurePursuit::Path({
-        //     {.x=0, .y=0},
-        // }, 8), FWD, 0.3),
+        tempend,
 
-        //Wall Align
-        drive_sys.TurnToHeadingCmd(90, 0.5)->withTimeout(1),
-        drive_sys.DriveForwardCmd(100, FWD, 0.25)->withTimeout(3),
-        cata_sys.Unintake(),
-        drive_sys.TurnDegreesCmd(90, .5)->withTimeout(1),
-        drive_sys.TurnDegreesCmd(-90, .5)->withTimeout(1),
-        drive_sys.DriveForwardCmd(100, FWD, 0.25)->withTimeout(2),
-        cata_sys.StopIntake(),
+        // Backup & localize
+        drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
+            {.x=0, .y=0},
+            {.x=0, .y=0},
+            {.x=0, .y=0},
+        }, 8), FWD, 0.4),
+        drive_sys.TurnToHeadingCmd(45),
+        new GPSLocalizeCommand(RED),
 
-        odom.SetPositionCmd({138, 138, 45}),
-        drive_sys.DriveToPointCmd({.x=127, .y=127}, REV, .5),
-        new WingCmd(LEFT, true),
-
-        // Curve to final position
-        drive_sys.PurePursuitCmd(PurePursuit::Path({
-            {.x=127, .y=127},
-            {.x=118, .y=113},
-            {.x=127, .y=98},
-        }, 12.0), REV, 0.4),
-        drive_sys.TurnToHeadingCmd(180, .5)->withTimeout(2),
-
-        //  FULL SPEED AHEAD
-        drive_sys.DriveForwardCmd(18, FWD, 0.5),
-        drive_sys.DriveForwardCmd(48, REV, 0.8)->withTimeout(1),
-
-        // Get out of the way & end
-        new WingCmd(LEFT, false),
-        drive_sys.TurnToHeadingCmd(129, .5),
-        drive_sys.DriveForwardCmd(24, FWD, 0.5),
     };
 
     cmd.run();

@@ -11,7 +11,8 @@ CataSys::CataSys(vex::distance &intake_watcher, vex::pot &cata_pot,
       cata_sys(cata_pot, cata_watcher, cata_motor, cata_feedback, drop),
       intake_sys(
           intake_watcher, intake_lower, intake_upper,
-          [&]() { return cata_sys.intaking_allowed(); }, drop) {}
+          [&]() { return cata_sys.intaking_allowed(); },
+          [&]() { return cata_watcher.isNearObject(); }, drop) {}
 
 void CataSys::send_command(Command next_cmd) {
     switch (next_cmd) {
@@ -21,7 +22,7 @@ void CataSys::send_command(Command next_cmd) {
     case CataSys::Command::IntakeIn:
         if (cata_sys.current_state() == CataOnlyState::CataOff) {
             intake_sys.send_message(IntakeMessage::IntakeHold);
-        } else if (cata_sys.intaking_allowed()) {
+        } else {
             intake_sys.send_message(IntakeMessage::Intake);
         }
         break;
@@ -53,12 +54,20 @@ void CataSys::send_command(Command next_cmd) {
         break;
     }
 }
+
+bool CataSys::intake_running() {
+    return !(intake_sys.current_state() == IntakeState::Stopped);
+}
+
 bool CataSys::still_dropping() {
     bool still_dropping =
         cata_sys.current_state() == CataOnlyState::WaitingForDrop ||
-        intake_sys.current_state() == IntakeState::Dropping;
+        (intake_sys.current_state() == IntakeState::Dropping ||
+         intake_sys.current_state() == IntakeState::IntakeWaitForDrop);
     return !still_dropping;
 }
+bool CataSys::ball_in_intake() { return intake_sys.ball_in_intake(); }
+
 bool CataSys::can_fire() const {
     return cata_sys.current_state() == CataOnlyState::ReadyToFire;
 }
@@ -142,9 +151,8 @@ AutoCommand *CataSys::WaitForIntake() {
 }
 
 AutoCommand *CataSys::WaitForHold() {
-    return new FunctionCommand([&]() {
-        return intake_watcher.objectDistance(distanceUnits::mm) < 150;
-    });
+    return new FunctionCommand(
+        [&]() { return intake_sys.current_state() == IntakeState::Stopped; });
 }
 
 AutoCommand *CataSys::Unintake() {
