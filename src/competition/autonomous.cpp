@@ -49,8 +49,8 @@ class WingCmd : public AutoCommand
 void autonomous()
 {
     while(imu.isCalibrating() || gps_sensor.isCalibrating()){vexDelay(100);}
-    scoreAutoFull();
-    // skills();
+    // scoreAutoFull();
+    skills();
 }
 
 bool light_on()
@@ -270,11 +270,11 @@ void skills()
             cata_sys.IntakeFully(),
             // Push against bar slowly & wait for triball to load
             new FunctionCommand([](){
-                drive_sys.drive_tank(0.3, 0.3);
+                drive_sys.drive_tank(0.1, 0.1);
                 return true;
             }),
 
-            // Up against thte wall, reset odometry
+            // Up against the wall, reset odometry
             cata_sys.WaitForIntake()->withTimeout(2),
             odom.SetPositionCmd({.x=15, .y=121, .rot = 135}),
 
@@ -344,7 +344,7 @@ void skills()
             new WingCmd(RIGHT, true),
              new WingCmd(LEFT, true),
             new WaitUntilCondition(new FunctionCondition([](){
-                return odom.get_position().x > 125;
+                return odom.get_position().x > 120;
             })),
             new WingCmd(RIGHT, false),
             new WingCmd(LEFT, false),
