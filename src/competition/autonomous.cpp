@@ -49,8 +49,8 @@ class WingCmd : public AutoCommand
 void autonomous()
 {
     while(imu.isCalibrating() || gps_sensor.isCalibrating()){vexDelay(100);}
-    // scoreAutoFull();
-    skills();
+    scoreAutoFull();
+    // skills();
 }
 
 bool light_on()
@@ -133,6 +133,7 @@ void scoreAutoFull()
             {.x=129, .y=26}
         }, 4), FWD)->withTimeout(1),
         cata_sys.WaitForHold()->withTimeout(3),
+        new DelayCommand(750),
 
         drive_sys.DriveForwardCmd(4, REV, 0.4),
         drive_sys.TurnToHeadingCmd(48),
@@ -241,6 +242,8 @@ void scoreAutoFull()
                 new GPSLocalizeCommand(SIDE),
             }
         },
+        drive_sys.TurnToHeadingCmd(135),
+        tempend,
         
         // complete AWP
         drive_sys.TurnToHeadingCmd(230),
@@ -320,20 +323,7 @@ void skills()
             // Done, go back to beginning of matchloading
             
         }, new FunctionCondition([](){ return false; })))->withTimeout(45),
-        // If there is a ball left in the catapult, fire it & THEN push
-        // new Branch{
-        //     is_in_cata(),
-        //     new InOrder { // FALSE
-        //         // do nothing
-        //     },
-        //     // Copied from above TRUE
-        //     new Async(new InOrder{
-        //         new WaitUntilCondition(new FunctionCondition([](){
-        //             return odom.get_position().y > 0;
-        //         })),
-        //         cata_sys.Fire()
-        //     })
-        // },
+        cata_sys.Fire(),
 
         // Deploy wing while driving after crossing X value
         // May not be needed for side goal

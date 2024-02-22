@@ -112,11 +112,20 @@ struct IntakingHold : IntakeSys::State {
     void entry(IntakeSys &sys) override {
         sys.intake_upper.spin(vex::fwd, intake_upper_volt_hold, vex::volt);
         sys.intake_lower.spin(vex::fwd, intake_lower_volt_hold, vex::volt);
+        isTiming = false;
     }
     IntakeSys::MaybeMessage work(IntakeSys &sys) override {
-        if (sys.ball_in_intake()) {
+
+        if (!isTiming && sys.ball_in_intake()) {
+            isTiming = true;
+            tmr.reset();
+        }
+
+        if(isTiming && tmr.time(vex::msec) > 50)
+        {
             return IntakeMessage::StopIntake;
         }
+        
         return {};
     }
     void exit(IntakeSys &sys) override {
@@ -126,6 +135,8 @@ struct IntakingHold : IntakeSys::State {
 
     IntakeState id() const override { return IntakeState::IntakingHold; }
     State *respond(IntakeSys &sys, IntakeMessage m) override;
+    vex::timer tmr;
+    bool isTiming = false;
 };
 struct Outtaking : IntakeSys::State {
     void entry(IntakeSys &sys) override {

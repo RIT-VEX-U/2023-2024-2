@@ -64,7 +64,10 @@ void opcontrol()
     right_wing.set(wing_isdown);
   });
 
-  con.ButtonUp.pressed([]() { enable_matchload = !enable_matchload; });
+  // con.ButtonUp.pressed([]() { enable_matchload = !enable_matchload; });
+  con.ButtonUp.pressed([](){
+    cata_sys.send_command(CataSys::Command::ToggleCata);
+  });
   pose_t start_pose = {.x = 16, .y = 144 - 16, .rot = 135};
 
   static std::atomic<bool> disable_drive(false);
