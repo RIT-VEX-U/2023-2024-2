@@ -20,17 +20,31 @@ void PID::init(double start_pt, double set_pt) {
  * are measuring
  * @return the new output. What would be returned by PID::get()
  */
-double PID::update(double sensor_val) {
+double PID::update(double sensor_val)
+{
+  return update(sensor_val, 0);
+}
+
+/**
+ * Update the PID loop by taking the time difference from last update,
+ * and running the PID formula with the new sensor data
+ * @param sensor_val the distance, angle, encoder position or whatever it is we
+ * are measuring
+ * @param v_setpt Expected velocity setpoint, to subtract from the D term (for 
+ * velocity control)
+ * @return the new output. What would be returned by PID::get()
+ */
+double PID::update(double sensor_val, double v_setpt) {
 
   this->sensor_val = sensor_val;
 
-  double time_delta = pid_timer.value() - last_time;
+  double time_delta = (pid_timer.systemHighResolution() / 1000000.0) - last_time;
 
   // Avoid a divide by zero error
   double d_term = 0;
-  if (time_delta != 0) {
-    d_term = config.d * (get_error() - last_error) / time_delta;
-  } else if (last_time != 0) {
+  if (time_delta != 0.0) {
+    d_term = config.d * (((get_error() - last_error) / time_delta) - v_setpt);
+  } else if (last_time != 0.0) {
     printf(
         "(pid.cpp): Warning - running PID without a delay is just a P loop!\n");
 }
@@ -50,7 +64,7 @@ double PID::update(double sensor_val) {
   // I term
   out += config.i * accum_error;
 
-  last_time = pid_timer.value();
+  last_time = pid_timer.systemHighResolution() / 1000000.0;
   last_error = get_error();
 
   // Enable clamping if the limit is not 0

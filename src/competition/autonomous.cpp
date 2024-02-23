@@ -105,12 +105,14 @@ void scoreAutoFull()
     DebugCommand *tempend = new DebugCommand();
 
     CommandController cmd{
+        // ================ INIT ================
         odom.SetPositionCmd({.x=54, .y=15, .rot=0}),
         new DelayCommand(500), // Wait for the catapult to go down
         // Collect Ball (after delay)
         cata_sys.IntakeToHold(),
 
-        // Drive to goal
+        // ================ TRIBALL 1 ================
+        // Drive underneath bar
         drive_sys.PurePursuitCmd(PurePursuit::Path({
             {.x=54, .y=15},
             {.x=97, .y=17},
@@ -118,12 +120,15 @@ void scoreAutoFull()
             {.x=124, .y=38},
         }, 8), directionType::fwd, 0.45),
         drive_sys.TurnToHeadingCmd(90),
+
+        // Score
         cata_sys.Unintake(),
         new DelayCommand(500),
         drive_sys.DriveForwardCmd(10, FWD)->withTimeout(1),
         cata_sys.StopIntake(),
-        // new GPSLocalizeCommand(), // 126, 39, 90 ish 
-        // Back up & get alliance ball
+
+        // ================ ALLIANCE TRIBALL ================
+        // Back up and drive to matchloading area
         drive_sys.DriveForwardCmd(drive_mc_slow, 4, REV),
         drive_sys.TurnToHeadingCmd(230),
         cata_sys.IntakeToHold(),
@@ -132,9 +137,12 @@ void scoreAutoFull()
             {.x=124, .y=35},
             {.x=129, .y=26}
         }, 4), FWD)->withTimeout(1),
+
+        // Intaking
         cata_sys.WaitForHold()->withTimeout(3),
         new DelayCommand(750),
-
+    
+        // Drive to side of goal
         drive_sys.DriveForwardCmd(4, REV, 0.4),
         drive_sys.TurnToHeadingCmd(48),
         drive_sys.DriveToPointCmd({131, 40}, FWD),
@@ -148,7 +156,9 @@ void scoreAutoFull()
         drive_sys.DriveForwardCmd(8, REV)->withTimeout(1),
         new GPSLocalizeCommand(SIDE),
 
-        // Drive into position
+        // ================ TRIBALL 3 ================
+        // Mid-line Triball closest to goal
+        // Drive & vision track ball
         drive_sys.TurnToHeadingCmd(180),
 
         new FunctionCommand(light_on),
@@ -160,10 +170,9 @@ void scoreAutoFull()
         }, 8), FWD),
 
         drive_sys.TurnToHeadingCmd(90),
-
-        // grab from center (closest to goal)
-        // TODO make sure we don't cross the line! (Async command?)
         
+        // IF triball exists, THEN track it
+        // ELSE skip & turn to next ball
         new Branch {
             new VisionObjectExists(vision_filter_s{
                     .min_area = 2000,
@@ -174,15 +183,17 @@ void scoreAutoFull()
                     .max_x = 320,
                     .min_y = 0,
                     .max_y = 240,
-            }), // Maybe add filter for left/right limits?
+            }),
             new InOrder{ // Object doesn't exist, big sad (turn & continue on)
                 new FunctionCommand(light_on),
                 drive_sys.TurnToHeadingCmd(123),
             },
             new InOrder { // Object exists, go get 'em!
+                // Track
                 cata_sys.IntakeToHold(),
                 new VisionTrackTriballCommand(),
-                // Back up & score
+
+                // Score
                 drive_sys.TurnToHeadingCmd(0),
                 cata_sys.Unintake(),
                 drive_sys.DriveForwardCmd(18, FWD, 0.8)->withTimeout(1),
@@ -194,6 +205,12 @@ void scoreAutoFull()
                 drive_sys.TurnToHeadingCmd(168, 0.4),
             }
         },
+
+        // ================ TRIBALL 4 ================
+        // Mid-line ball furthest from goal
+
+        // IF ball exists THEN track it
+        // ELSE skip & continue on
         new Branch {
             new VisionObjectExists(vision_filter_s{
                     .min_area = 2000,
@@ -209,9 +226,12 @@ void scoreAutoFull()
                 // No change
             },
             new InOrder { // Object exists, go get 'em!
+                // Track
                 cata_sys.IntakeToHold(),
                 new VisionTrackTriballCommand(),
                 drive_sys.TurnToHeadingCmd(0, 0.4),
+
+                // Score
                 cata_sys.Unintake(),
                 drive_sys.DriveForwardCmd(36, FWD, 0.8)->withTimeout(1),
                 cata_sys.StopIntake(),
@@ -219,10 +239,16 @@ void scoreAutoFull()
             }
         },
         
-        // Grab triball along wall
+        // ================ TRIBALL 5 ================
+        // Last one in offensive zone, along the barrier
+
+        // Track
         drive_sys.TurnToHeadingCmd(214, 0.4),
         cata_sys.IntakeToHold(),
         new VisionTrackTriballCommand(),
+
+        // Check if picked up ball, return it
+        // TODO this branch is useless tbh
         new Branch {
             new FunctionCondition([](){return intake_watcher.objectDistance(mm) < 150;}),
             new InOrder { // No ball detected
@@ -245,7 +271,8 @@ void scoreAutoFull()
         drive_sys.TurnToHeadingCmd(135),
         tempend,
         
-        // complete AWP
+        // ================ DRIVE TO ELEVATION BAR ================
+        // Complete the AWP
         drive_sys.TurnToHeadingCmd(230),
         drive_sys.DriveToPointCmd({.x=75, .y=34}, FWD)->withTimeout(3),
         drive_sys.DriveForwardCmd(48, FWD, 0.2)->withTimeout(3),

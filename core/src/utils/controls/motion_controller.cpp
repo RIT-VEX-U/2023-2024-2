@@ -38,7 +38,7 @@ double MotionController::update(double sensor_val)
 {
     cur_motion = profile.calculate(tmr.time(timeUnits::sec));
     pid.set_target(cur_motion.pos);
-    pid.update(sensor_val);
+    pid.update(sensor_val, cur_motion.vel);
 
     out = pid.get() +  ff.calculate(cur_motion.vel, cur_motion.accel, pid.get());
 

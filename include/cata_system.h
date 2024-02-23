@@ -31,6 +31,9 @@ class CataSys {
     bool ball_in_intake();
     bool intake_running();
 
+    CataOnlyState get_cata_state();
+    IntakeState get_intake_state();
+
     // Autocommands
     AutoCommand *Fire();
     AutoCommand *StopIntake();

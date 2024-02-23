@@ -81,6 +81,17 @@ public:
   double update(double sensor_val) override;
 
   /**
+   * Update the PID loop by taking the time difference from last update,
+   * and running the PID formula with the new sensor data
+   * @param sensor_val the distance, angle, encoder position or whatever it is we
+   * are measuring
+   * @param v_setpt Expected velocity setpoint, to subtract from the D term (for 
+   * velocity control)
+   * @return the new output. What would be returned by PID::get()
+   */
+  double update(double sensor_val, double v_setpt);
+
+  /**
    * @brief gets the sensor value that we were last updated with
    * @return sensor_val
    */

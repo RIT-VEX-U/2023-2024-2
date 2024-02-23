@@ -308,8 +308,22 @@ void tune_drive_motion_accel(DriveType dt, double maxv)
         }
         else if (!done)
         {
-            vel = odom.get_angular_speed_deg();
-            accel = odom.get_angular_accel_deg();
+            static vex::timer tmr;
+            static uint64_t last_time = tmr.systemHighResolution();
+            static double last_rot = imu.rotation(deg);
+            static double last_vel = 0;
+
+            double delta = (tmr.systemHighResolution() - last_time) / 1000000.0;
+
+            vel = (imu.rotation(deg) - last_rot) / delta;
+            accel = (vel - last_vel) / delta;
+
+            last_time = tmr.systemHighResolution();
+            last_rot = imu.rotation(deg);
+            last_vel = vel;
+
+            // vel = odom.get_angular_speed_deg();
+            // accel = odom.get_angular_accel_deg();
         }
 
         if (done || vel >= maxv)

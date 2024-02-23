@@ -161,3 +161,13 @@ AutoCommand *CataSys::Unintake() {
         return true;
     });
 }
+
+CataOnlyState CataSys::get_cata_state()
+{
+    return cata_sys.current_state();
+}
+
+IntakeState CataSys::get_intake_state()
+{
+    return intake_sys.current_state();
+}
