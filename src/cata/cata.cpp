@@ -1,14 +1,12 @@
 #include "cata/cata.h"
 
 bool intake_can_be_enabled(double cata_pos) {
-  return (cata_pos == 0.0) || (cata_pos > inake_enable_lower_threshold &&
-                               cata_pos < intake_enable_upper_threshold);
+  return (cata_pos == 0.0) || (cata_pos > inake_enable_lower_threshold && cata_pos < intake_enable_upper_threshold);
 }
 bool CataOnlySys::intaking_allowed() {
   double cata_pos = pot.angle(vex::deg);
 
-  return ((cata_pos == 0.0) || (cata_pos > inake_enable_lower_threshold &&
-                                cata_pos < intake_enable_upper_threshold) &&
+  return ((cata_pos == 0.0) || (cata_pos > inake_enable_lower_threshold && cata_pos < intake_enable_upper_threshold) &&
                                    !cata_watcher.isNearObject());
 }
 
@@ -66,9 +64,7 @@ struct Reloading : public CataOnlySys::State {
 
 class Firing : public CataOnlySys::State {
 public:
-  void entry(CataOnlySys &sys) override {
-    sys.mot.spin(vex::reverse, fire_voltage, vex::volt);
-  }
+  void entry(CataOnlySys &sys) override { sys.mot.spin(vex::reverse, fire_voltage, vex::volt); }
   CataOnlySys::MaybeMessage work(CataOnlySys &sys) override {
     // started goin up again
     if (sys.pot.angle(vex::deg) > done_firing_angle) {
@@ -111,8 +107,7 @@ CataOnlySys::State *CataOff::respond(CataOnlySys &sys, CataOnlyMessage m) {
   return this;
 }
 
-CataOnlySys::State *WaitingForDrop::respond(CataOnlySys &sys,
-                                            CataOnlyMessage m) {
+CataOnlySys::State *WaitingForDrop::respond(CataOnlySys &sys, CataOnlyMessage m) {
   if (m == CataOnlyMessage::EnableCata) {
     return new Reloading();
   }
@@ -200,11 +195,8 @@ std::string to_string(CataOnlyMessage m) {
   return "UNHANDLED CATA MESSAGE";
 }
 
-CataOnlySys::CataOnlySys(vex::pot &cata_pot, vex::optical &cata_watcher,
-                         vex::motor_group &cata_motor, PIDFF &cata_pid,
+CataOnlySys::CataOnlySys(vex::pot &cata_pot, vex::optical &cata_watcher, vex::motor_group &cata_motor, PIDFF &cata_pid,
                          DropMode drop)
-    : StateMachine((drop == DropMode::Required)
-                       ? (CataOnlySys::State *)(new CataOff())
-                       : (CataOnlySys::State *)(new Reloading())),
-      pot(cata_pot), cata_watcher(cata_watcher), mot(cata_motor),
-      pid(cata_pid) {}
+    : StateMachine((drop == DropMode::Required) ? (CataOnlySys::State *)(new CataOff())
+                                                : (CataOnlySys::State *)(new Reloading())),
+      pot(cata_pot), cata_watcher(cata_watcher), mot(cata_motor), pid(cata_pid) {}

@@ -17,24 +17,22 @@ using namespace vex;
 vex::competition comp;
 
 /**
- * Program entrypoint. Defines the competition autonomous and opcontrol entrypoints,
- * and init functions.
+ * Program entrypoint. Defines the competition autonomous and opcontrol
+ * entrypoints, and init functions.
  *
  * Do not modify this file!
  */
 
-int main()
-{
+int main() {
 
-    comp.autonomous(autonomous);
-    comp.drivercontrol(opcontrol);
+  comp.autonomous(autonomous);
+  comp.drivercontrol(opcontrol);
 
-    robot_init();
+  robot_init();
 
-    while (1)
-    {
+  while (1) {
 
-        // Allow other tasks to run
-        this_thread::sleep_for(1000);
-    }
+    // Allow other tasks to run
+    this_thread::sleep_for(1000);
+  }
 }

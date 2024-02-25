@@ -22,7 +22,7 @@ const double intake_sensor_dist_mm = 150;
 const double intake_drop_seconds = 0.5;
 
 // Cata Params
-const double cata_target_charge = 100; 
+const double cata_target_charge = 100;
 const double done_firing_angle = 110;
 
 const double intake_drop_seconds_until_enable = 0.25;

@@ -9,52 +9,50 @@
 #include "vex.h"
 
 class CataSys {
-  public:
-    enum class Command {
-        IntakeIn,
-        IntakeHold,
-        StopIntake,
-        IntakeOut,
-        StartDropping,
-        StartFiring,
-        ToggleCata,
-    };
+public:
+  enum class Command {
+    IntakeIn,
+    IntakeHold,
+    StopIntake,
+    IntakeOut,
+    StartDropping,
+    StartFiring,
+    ToggleCata,
+  };
 
-    CataSys(vex::distance &intake_watcher, vex::pot &cata_pot,
-            vex::optical &cata_watcher, vex::motor_group &cata_motor,
-            vex::motor &intake_upper, vex::motor &intake_lower,
-            PIDFF &cata_feedback, DropMode drop);
-    void send_command(Command cmd);
-    bool can_fire() const;
-    // Returns true when the cata system is finished dropping
-    bool still_dropping();
-    bool ball_in_intake();
-    bool intake_running();
+  CataSys(vex::distance &intake_watcher, vex::pot &cata_pot, vex::optical &cata_watcher, vex::motor_group &cata_motor,
+          vex::motor &intake_upper, vex::motor &intake_lower, PIDFF &cata_feedback, DropMode drop);
+  void send_command(Command cmd);
+  bool can_fire() const;
+  // Returns true when the cata system is finished dropping
+  bool still_dropping();
+  bool ball_in_intake();
+  bool intake_running();
 
-    CataOnlyState get_cata_state();
-    IntakeState get_intake_state();
+  CataOnlyState get_cata_state();
+  IntakeState get_intake_state();
 
-    // Autocommands
-    AutoCommand *Fire();
-    AutoCommand *StopIntake();
-    AutoCommand *IntakeToHold();
-    AutoCommand *IntakeFully();
-    AutoCommand *WaitForIntake();
-    AutoCommand *WaitForHold();
-    AutoCommand *Unintake();
+  // Autocommands
+  AutoCommand *Fire();
+  AutoCommand *StopIntake();
+  AutoCommand *IntakeToHold();
+  AutoCommand *IntakeFully();
+  AutoCommand *WaitForIntake();
+  AutoCommand *WaitForHold();
+  AutoCommand *Unintake();
 
-    screen::Page *Page();
-    // Page
+  screen::Page *Page();
+  // Page
 
-  private:
-    // configuration
-    vex::distance &intake_watcher;
-    vex::pot &cata_pot;
-    vex::optical &cata_watcher;
-    vex::motor_group &cata_motor;
-    vex::motor &intake_upper;
-    vex::motor &intake_lower;
-    CataOnlySys cata_sys;
-    IntakeSys intake_sys;
-    friend class CataSysPage;
+private:
+  // configuration
+  vex::distance &intake_watcher;
+  vex::pot &cata_pot;
+  vex::optical &cata_watcher;
+  vex::motor_group &cata_motor;
+  vex::motor &intake_upper;
+  vex::motor &intake_lower;
+  CataOnlySys cata_sys;
+  IntakeSys intake_sys;
+  friend class CataSysPage;
 };

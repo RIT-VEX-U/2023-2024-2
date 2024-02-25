@@ -2,10 +2,7 @@
 
 #include "../core/include/utils/controls/feedback_base.h"
 
-enum DriveType
-{
-    DRIVE, TURN
-};
+enum DriveType { DRIVE, TURN };
 
 // Odometry Tuning
 void tune_odometry_gear_ratio_right_wheel();

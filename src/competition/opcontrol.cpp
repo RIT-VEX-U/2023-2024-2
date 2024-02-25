@@ -12,15 +12,13 @@
 /**
  * Main entrypoint for the driver control period
  */
-void opcontrol()
-{
+void opcontrol() {
   // ================ TUNING CODE (Disable when not testing) ================
   // testing();
 
   // ================ INIT ================
   // Ensure the catapult system is enabled during driver control
-  if (cata_sys.get_cata_state() == CataOnlyState::CataOff)
-  {
+  if (cata_sys.get_cata_state() == CataOnlyState::CataOff) {
     cata_sys.send_command(CataSys::Command::ToggleCata);
   }
 
@@ -43,38 +41,29 @@ void opcontrol()
   // -- A - quick turn (Right)
   // -- Left - quick turn (Left)
 
-  con.ButtonL2.pressed(
-    []() { cata_sys.send_command(CataSys::Command::StartFiring); });
+  con.ButtonL2.pressed([]() { cata_sys.send_command(CataSys::Command::StartFiring); });
   // con.ButtonL2.released([]() {
   // cata_sys.send_command(CataSys::Command::StopFiring); });
 
-  con.ButtonR1.pressed(
-    []() { cata_sys.send_command(CataSys::Command::IntakeIn); });
-  con.ButtonR1.released(
-    []() { cata_sys.send_command(CataSys::Command::StopIntake); });
+  con.ButtonR1.pressed([]() { cata_sys.send_command(CataSys::Command::IntakeIn); });
+  con.ButtonR1.released([]() { cata_sys.send_command(CataSys::Command::StopIntake); });
 
-  con.ButtonR2.pressed(
-    []() { cata_sys.send_command(CataSys::Command::IntakeOut); });
-  con.ButtonR2.released(
-    []() { cata_sys.send_command(CataSys::Command::StopIntake); });
+  con.ButtonR2.pressed([]() { cata_sys.send_command(CataSys::Command::IntakeOut); });
+  con.ButtonR2.released([]() { cata_sys.send_command(CataSys::Command::StopIntake); });
 
-  con.ButtonL1.pressed(
-    []() { cata_sys.send_command(CataSys::Command::IntakeHold); });
-  con.ButtonL1.released(
-    []() { cata_sys.send_command(CataSys::Command::StopIntake); });
+  con.ButtonL1.pressed([]() { cata_sys.send_command(CataSys::Command::IntakeHold); });
+  con.ButtonL1.released([]() { cata_sys.send_command(CataSys::Command::StopIntake); });
 
   con.ButtonB.pressed([]() {
     static bool wing_isdown = false;
     wing_isdown = !wing_isdown;
     left_wing.set(wing_isdown);
     right_wing.set(wing_isdown);
-    });
+  });
 
   // con.ButtonUp.pressed([]() { enable_matchload = !enable_matchload; });
-  con.ButtonUp.pressed([]() {
-    cata_sys.send_command(CataSys::Command::ToggleCata);
-    });
-  pose_t start_pose = { .x = 16, .y = 144 - 16, .rot = 135 };
+  con.ButtonUp.pressed([]() { cata_sys.send_command(CataSys::Command::ToggleCata); });
+  pose_t start_pose = {.x = 16, .y = 144 - 16, .rot = 135};
 
   static std::atomic<bool> disable_drive(false);
 
@@ -87,7 +76,7 @@ void opcontrol()
     // right_motors.stop(brakeType::coast);
     // left_motors.stop(brakeType::coast);
     disable_drive = false;
-    });
+  });
 
   con.ButtonLeft.pressed([]() {
     // Turn Left
@@ -98,20 +87,20 @@ void opcontrol()
     // right_motors.stop(brakeType::coast);
     // left_motors.stop(brakeType::coast);
     disable_drive = false;
-    });
+  });
 
   con.ButtonDown.pressed([]() {
     // Climb
     static bool isUp = false;
     left_climb.set(isUp = !isUp);
     right_climb.set(isUp);
-    });
+  });
 
   // personal debug button >:]
   con.ButtonRight.pressed([]() {
     vision_light.set(!vision_light.value());
     // gps_localize_stdev();
-    });
+  });
 
   vision_light.set(false);
 
@@ -159,19 +148,19 @@ void testing() {
 
   // while(!con.ButtonA.pressing())
   // {
-    // tune_drive_ff_kv(TURN, 0.02);
-    // tune_drive_motion_maxv(TURN);
-    // tune_drive_motion_accel(TURN, 520);
-    // CommandController{
-    //   drive_sys.DriveToPointCmd({0, 12}, vex::forward),
-    //   drive_sys.TurnToHeadingCmd(0),
-    //   drive_sys.DriveToPointCmd({12, 12}, vex::forward),
-    //   drive_sys.TurnToHeadingCmd(270),
-    //   drive_sys.DriveToPointCmd({12, 0}, vex::forward),
-    //   drive_sys.TurnToHeadingCmd(180),
-    //   drive_sys.DriveToPointCmd({0, 0}, vex::forward),
-    //   drive_sys.TurnToHeadingCmd(90),
-    // }.run();
+  // tune_drive_ff_kv(TURN, 0.02);
+  // tune_drive_motion_maxv(TURN);
+  // tune_drive_motion_accel(TURN, 520);
+  // CommandController{
+  //   drive_sys.DriveToPointCmd({0, 12}, vex::forward),
+  //   drive_sys.TurnToHeadingCmd(0),
+  //   drive_sys.DriveToPointCmd({12, 12}, vex::forward),
+  //   drive_sys.TurnToHeadingCmd(270),
+  //   drive_sys.DriveToPointCmd({12, 0}, vex::forward),
+  //   drive_sys.TurnToHeadingCmd(180),
+  //   drive_sys.DriveToPointCmd({0, 0}, vex::forward),
+  //   drive_sys.TurnToHeadingCmd(90),
+  // }.run();
 
   //   vexDelay(5);
   // }
@@ -189,13 +178,12 @@ void testing() {
     vexDelay(500); // Settle first
     GPSLocalizeCommand(RED).run();
     disable_drive = false;
-    });
+  });
 
   // // ================ VISION TESTING ================
   con.ButtonRight.pressed([]() { vision_light.set(!vision_light.value()); });
 
-  con.ButtonLeft.pressed(
-    []() { cata_sys.send_command(CataSys::Command::ToggleCata); });
+  con.ButtonLeft.pressed([]() { cata_sys.send_command(CataSys::Command::ToggleCata); });
 
   while (true) {
 
@@ -207,15 +195,12 @@ void testing() {
 
     // ================ Drive Tuning =================
     static bool done_a = false;
-    if (con.ButtonA.pressing() && !done_a)
-    {
+    if (con.ButtonA.pressing() && !done_a) {
       disable_drive = true;
       // done_a = drive_sys.drive_to_point(0, 48, directionType::fwd);
       // done_a = drive_sys.drive_forward(24, vex::fwd);
       done_a = drive_sys.turn_degrees(100);
-    }
-    else if (!con.ButtonA.pressing())
-    {
+    } else if (!con.ButtonA.pressing()) {
       drive_sys.reset_auto();
       disable_drive = false;
       done_a = false;
@@ -224,15 +209,14 @@ void testing() {
     // ================ Debug Print Statements ================
     pose_t odom_pose = odom.get_position();
     pose_t gps_pose = GPSLocalizeCommand::get_pose_rotated();
-    printf("ODO: {%.2f, %.2f, %.2f} %f\n", 
-      odom_pose.x, odom_pose.y, odom_pose.rot, imu.heading(deg));
+    printf("ODO: {%.2f, %.2f, %.2f} %f\n", odom_pose.x, odom_pose.y, odom_pose.rot, imu.heading(deg));
     // printf("ODO: {%.2f, %.2f, %.2f} | GPS: {%.2f, %.2f, %.2f}\n",
-    //         odom_pose.x, odom_pose.y, odom_pose.rot, gps_pose.x, gps_pose.y, gps_pose.rot);
+    //         odom_pose.x, odom_pose.y, odom_pose.rot, gps_pose.x, gps_pose.y,
+    //         gps_pose.rot);
 
     auto objs = vision_run_filter(TRIBALL);
     int n = objs.size(), x = 0, y = 0, a = 0;
-    if (n > 0)
-    {
+    if (n > 0) {
       x = objs[0].centerX;
       y = objs[0].centerY;
       a = objs[0].width * objs[0].height;
