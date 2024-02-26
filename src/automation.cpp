@@ -40,7 +40,7 @@ bool VisionTrackTriballCommand::run() {
   vision_light.set(true);
   std::vector<vision::object> sensed_obj = vision_run_filter(TRIBALL);
 
-  if (intake_watcher.objectDistance(distanceUnits::mm) < 100) {
+  if (cata_sys.ball_in_intake()) {
     // Done when triball is in the intake
     drive_sys.stop();
     vision_light.set(false);
@@ -125,7 +125,13 @@ std::vector<vision::object> vision_run_filter(vision::signature &sig, vision_fil
 
 VisionObjectExists::VisionObjectExists(vision_filter_s filter) : filter(filter) {}
 
-bool VisionObjectExists::test() { return vision_run_filter(TRIBALL, this->filter).size() > 0; }
+bool VisionObjectExists::test() { 
+  vision_light.set(true);
+  vexDelay(500);
+  bool retval = vision_run_filter(TRIBALL, this->filter).size() > 0;
+  vision_light.set(false);
+  return retval; 
+}
 
 // DOES NOT WORK, DO NOT USE!
 point_t estimate_triball_pos(vision::object &obj) {

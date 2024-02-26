@@ -46,5 +46,7 @@
 	},
 	"ros.distro": "noetic",
 	"C_Cpp.default.compilerPath": "/usr/bin/arm-none-eabi-g++",
-	"C_Cpp.intelliSenseEngineFallback": "disabled"
+	"C_Cpp.intelliSenseEngineFallback": "disabled",
+	"C_Cpp.clang_format_fallbackStyle": "file",
+	"C_Cpp.formatting": "clangFormat"
 }
