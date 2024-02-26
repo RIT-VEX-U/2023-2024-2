@@ -20,8 +20,10 @@ public:
     ToggleCata,
   };
 
-  CataSys(vex::distance &intake_watcher, vex::pot &cata_pot, vex::optical &cata_watcher, vex::motor_group &cata_motor,
-          vex::motor &intake_upper, vex::motor &intake_lower, PIDFF &cata_feedback, DropMode drop);
+  CataSys(
+    vex::distance &intake_watcher, vex::pot &cata_pot, vex::optical &cata_watcher, vex::motor_group &cata_motor,
+    vex::motor &intake_upper, vex::motor &intake_lower, PIDFF &cata_feedback, DropMode drop
+  );
   void send_command(Command cmd);
   bool can_fire() const;
   // Returns true when the cata system is finished dropping

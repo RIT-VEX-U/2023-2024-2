@@ -10,15 +10,15 @@
 
 // VISION TRACKING
 vision_filter_s default_vision_filter = {
-    .min_area = 300,
-    .max_area = 100000,
-    .aspect_low = 0.8,
-    .aspect_high = 4,
+  .min_area = 300,
+  .max_area = 100000,
+  .aspect_low = 0.8,
+  .aspect_high = 4,
 
-    .min_x = 0,
-    .max_x = 320,
-    .min_y = 0,
-    .max_y = 240,
+  .min_x = 0,
+  .max_x = 320,
+  .min_y = 0,
+  .max_y = 240,
 };
 
 FeedForward::ff_config_t angle_ff_cfg{
@@ -125,12 +125,12 @@ std::vector<vision::object> vision_run_filter(vision::signature &sig, vision_fil
 
 VisionObjectExists::VisionObjectExists(vision_filter_s filter) : filter(filter) {}
 
-bool VisionObjectExists::test() { 
+bool VisionObjectExists::test() {
   vision_light.set(true);
   vexDelay(500);
   bool retval = vision_run_filter(TRIBALL, this->filter).size() > 0;
   vision_light.set(false);
-  return retval; 
+  return retval;
 }
 
 // DOES NOT WORK, DO NOT USE!
@@ -250,8 +250,9 @@ std::tuple<pose_t, double> gps_localize_stdev() {
 
   // Filter out points that are greater than 2 standard deviations away from
   // original mean
-  auto itr = std::remove_if(pose_list.begin(), pose_list.end(),
-                            [=](pose_t p) { return p.get_point().dist(avg_point) > dist_stdev; });
+  auto itr = std::remove_if(pose_list.begin(), pose_list.end(), [=](pose_t p) {
+    return p.get_point().dist(avg_point) > dist_stdev;
+  });
 
   // ACTUALLY remove it cause remove_if kinda sucks
   pose_list.erase(itr, pose_list.end());
@@ -287,8 +288,8 @@ bool GPSLocalizeCommand::run() {
 }
 
 pose_t GPSLocalizeCommand::get_pose_rotated() {
-  Vector2D new_pose_vec(
-      point_t{.x = gps_sensor.xPosition(distanceUnits::in) + 72, .y = gps_sensor.yPosition(distanceUnits::in) + 72});
+  Vector2D new_pose_vec(point_t{
+    .x = gps_sensor.xPosition(distanceUnits::in) + 72, .y = gps_sensor.yPosition(distanceUnits::in) + 72});
   Vector2D rot(new_pose_vec.get_dir() + deg2rad(rotation), new_pose_vec.get_mag());
 
   return pose_t{.x = rot.get_x(), .y = rot.get_y(), .rot = gps_sensor.heading(rotationUnits::deg)};
@@ -313,19 +314,19 @@ void matchload_1(std::function<bool()> enable) {
   static timer drive_tmr;
   drive_tmr.reset();
   CommandController cmd{
+    cata_sys.IntakeFully(),
+    intakeToCata->withTimeout(1),
+    new Async{new InOrder{
+      new DelayCommand(200),
+      cata_sys.Fire(),
       cata_sys.IntakeFully(),
-      intakeToCata->withTimeout(1),
-      new Async{new InOrder{
-          new DelayCommand(200),
-          cata_sys.Fire(),
-          cata_sys.IntakeFully(),
-      }},
-      drive_sys.DriveForwardCmd(14, REV, 0.6)->withTimeout(1),
-      // new
-      // FunctionCommand([](){cata_sys.send_command(CataSys::Command::StopFiring);
-      // return true;}),
-      cata_sys.IntakeFully(),
-      drive_sys.DriveForwardCmd(14, FWD, 0.6)->withTimeout(1),
+    }},
+    drive_sys.DriveForwardCmd(14, REV, 0.6)->withTimeout(1),
+    // new
+    // FunctionCommand([](){cata_sys.send_command(CataSys::Command::StopFiring);
+    // return true;}),
+    cata_sys.IntakeFully(),
+    drive_sys.DriveForwardCmd(14, FWD, 0.6)->withTimeout(1),
   };
 
   // Cancel the operation if the button is ever released

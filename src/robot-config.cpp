@@ -92,21 +92,21 @@ motor_group intake_motors = {intake_combine, intake_roller};
 motor_group cata_motors(cata_l, cata_r);
 
 std::map<std::string, motor &> motor_names = {
-    {"left ff", left_front_front},
-    {"left fb", left_front_back},
-    {"left bf", left_back_front},
-    {"left bb", left_back_back},
+  {"left ff", left_front_front},
+  {"left fb", left_front_back},
+  {"left bf", left_back_front},
+  {"left bb", left_back_back},
 
-    {"right ff", right_front_front},
-    {"right fb", right_front_back},
-    {"right bf", right_back_front},
-    {"right bb", right_back_back},
+  {"right ff", right_front_front},
+  {"right fb", right_front_back},
+  {"right bf", right_back_front},
+  {"right bb", right_back_back},
 
-    {"cata L", cata_l},
-    {"cata R", cata_r},
+  {"cata L", cata_l},
+  {"cata R", cata_r},
 
-    {"intake H", intake_combine},
-    {"intake L", intake_roller},
+  {"intake H", intake_combine},
+  {"intake L", intake_roller},
 
 };
 
@@ -114,74 +114,79 @@ PID::pid_config_t drive_pid_cfg = {.p = .2, .i = 0.0, .d = .01, .deadband = 0.5,
 PID drive_pid(drive_pid_cfg);
 
 PID::pid_config_t turn_pid_cfg = {
-    // .p = 0.05,
-    // .i = 0.00,
-    // .d = 0.0020,
-    // .deadband = 3,
-    // .on_target_time = 0.1
+  // .p = 0.05,
+  // .i = 0.00,
+  // .d = 0.0020,
+  // .deadband = 3,
+  // .on_target_time = 0.1
 };
 
 PID::pid_config_t drive_mc_pid_cfg = {
-    .p = 0.1,
-    // .i = 0,
-    .d = 0.005,
-    .deadband = 1,
-    .on_target_time = 0.01,
+  .p = 0.1,
+  // .i = 0,
+  .d = 0.005,
+  .deadband = 1,
+  .on_target_time = 0.01,
 };
 
 FeedForward::ff_config_t drive_mc_ff_cfg = {
-    .kS = 0.03, .kV = 0.0145, .kA = 0.001,
-    // .kG = 0,
+  .kS = 0.03, .kV = 0.0145, .kA = 0.001,
+  // .kG = 0,
 };
 
 // FAST linear motion profile
-MotionController::m_profile_cfg_t drive_mc_fast_cfg{.max_v = 55,  // Max 55 in/sec (at 100%)
-                                                    .accel = 180, // Max 200 in/sec^2 (at 100%)
-                                                    .pid_cfg = drive_mc_pid_cfg,
-                                                    .ff_cfg = drive_mc_ff_cfg};
+MotionController::m_profile_cfg_t drive_mc_fast_cfg{
+  .max_v = 55,  // Max 55 in/sec (at 100%)
+  .accel = 180, // Max 200 in/sec^2 (at 100%)
+  .pid_cfg = drive_mc_pid_cfg,
+  .ff_cfg = drive_mc_ff_cfg};
 MotionController drive_mc_fast(drive_mc_fast_cfg);
 
 // SLOW linear motion profile
-MotionController::m_profile_cfg_t drive_mc_slow_cfg = {.max_v = 20,  // in/sec
-                                                       .accel = 100, // in/sec^2
-                                                       .pid_cfg = drive_mc_pid_cfg,
-                                                       .ff_cfg = drive_mc_ff_cfg};
+MotionController::m_profile_cfg_t drive_mc_slow_cfg = {
+  .max_v = 20,  // in/sec
+  .accel = 100, // in/sec^2
+  .pid_cfg = drive_mc_pid_cfg,
+  .ff_cfg = drive_mc_ff_cfg};
 MotionController drive_mc_slow(drive_mc_slow_cfg);
 
-MotionController::m_profile_cfg_t turn_mc_cfg{.max_v = 520, // 520 deg/sec max
-                                              .accel = 400, // 900 deg/sec2 max
-                                              .pid_cfg =
-                                                  PID::pid_config_t{
-                                                      .p = 0.06,
-                                                      // .i = 0,
-                                                      .d = 0.001,
-                                                      .deadband = 3, // Get within X degrees of the setpoint
-                                                      .on_target_time = .01,
-                                                  },
-                                              .ff_cfg = FeedForward::ff_config_t{
-                                                  .kS = 0.02,
-                                                  .kV = 0.00105, // 0.002,
-                                                  .kA = 0.0002,
-                                                  // .kG = 0,
-                                              }};
+MotionController::m_profile_cfg_t turn_mc_cfg{
+  .max_v = 520, // 520 deg/sec max
+  .accel = 400, // 900 deg/sec2 max
+  .pid_cfg =
+    PID::pid_config_t{
+      .p = 0.06,
+      // .i = 0,
+      .d = 0.001,
+      .deadband = 3, // Get within X degrees of the setpoint
+      .on_target_time = .01,
+    },
+  .ff_cfg = FeedForward::ff_config_t{
+    .kS = 0.02,
+    .kV = 0.00105, // 0.002,
+    .kA = 0.0002,
+    // .kG = 0,
+  }};
 MotionController turn_mc{turn_mc_cfg};
 
-robot_specs_t robot_cfg = {.robot_radius = 8,         // inches
-                           .odom_wheel_diam = 4.0125, // inches
-                           .odom_gear_ratio = .6667,
-                           .dist_between_wheels = 10.45, // inches
-                           .drive_correction_cutoff = 4, // inches
-                           .drive_feedback = &drive_mc_fast,
-                           .turn_feedback = &turn_mc, // new PID(turn_pid_cfg),
-                           .correction_pid = (PID::pid_config_t){
-                               .p = .01,
-                               // .d = .001
-                           }};
+robot_specs_t robot_cfg = {
+  .robot_radius = 8,         // inches
+  .odom_wheel_diam = 4.0125, // inches
+  .odom_gear_ratio = .6667,
+  .dist_between_wheels = 10.45, // inches
+  .drive_correction_cutoff = 4, // inches
+  .drive_feedback = &drive_mc_fast,
+  .turn_feedback = &turn_mc, // new PID(turn_pid_cfg),
+  .correction_pid = (PID::pid_config_t){
+    .p = .01,
+    // .d = .001
+  }};
 
-PID::pid_config_t pc = {.p = 1,
-                        // .i = 2,
-                        .deadband = 2,
-                        .on_target_time = 0.3};
+PID::pid_config_t pc = {
+  .p = 1,
+  // .i = 2,
+  .deadband = 2,
+  .on_target_time = 0.3};
 
 FeedForward::ff_config_t ffc = {.kG = -2};
 
@@ -189,8 +194,9 @@ PIDFF cata_pid(pc, ffc);
 
 OdometryTank odom{left_motors, right_motors, robot_cfg, &imu};
 TankDrive drive_sys(left_motors, right_motors, robot_cfg, &odom);
-CataSys cata_sys(intake_watcher, cata_pot, cata_watcher, cata_motors, intake_combine, intake_roller, cata_pid,
-                 DropMode::Unnecessary);
+CataSys cata_sys(
+  intake_watcher, cata_pot, cata_watcher, cata_motors, intake_combine, intake_roller, cata_pid, DropMode::Unnecessary
+);
 
 // ================ UTILS ================
 std::vector<screen::Page *> pages;
@@ -202,10 +208,10 @@ std::vector<screen::Page *> pages;
 void robot_init() {
 
   pages = {
-      new AutoChooser({"Auto 1", "Auto 2", "Auto 3", "Auto 4"}),
-      new screen::OdometryPage(odom, 12, 12, true),
-      cata_sys.Page(),
-      new screen::StatsPage(motor_names),
+    new AutoChooser({"Auto 1", "Auto 2", "Auto 3", "Auto 4"}),
+    new screen::OdometryPage(odom, 12, 12, true),
+    cata_sys.Page(),
+    new screen::StatsPage(motor_names),
   };
 
   screen::start_screen(Brain.Screen, pages, 2);

@@ -86,9 +86,11 @@ public:
       //     gps_sensor.yPosition(distanceUnits::in)+72,
       //     gps_sensor.heading(), gps_sensor.quality());
       cam.takeSnapshot(TRIBALL);
-      printf("X: %d, Y: %d, A: %d, Ratio: %f\n", cam.largestObject.centerX, cam.largestObject.centerY,
-             cam.largestObject.width * cam.largestObject.height,
-             (double)cam.largestObject.width / (double)cam.largestObject.height);
+      printf(
+        "X: %d, Y: %d, A: %d, Ratio: %f\n", cam.largestObject.centerX, cam.largestObject.centerY,
+        cam.largestObject.width * cam.largestObject.height,
+        (double)cam.largestObject.width / (double)cam.largestObject.height
+      );
       vexDelay(100);
     }
     return false;

@@ -209,9 +209,12 @@ IntakeSys::State *Outtaking::respond(IntakeSys &sys, IntakeMessage m) {
   return this;
 }
 
-IntakeSys::IntakeSys(vex::distance &intake_watcher, vex::motor &intake_lower, vex::motor &intake_upper,
-                     std::function<bool()> can_intake, std::function<bool()> ball_in_cata, DropMode drop)
-    : StateMachine(drop == DropMode::Required ? (IntakeSys::State *)(new IntakeWaitForDrop())
-                                              : (IntakeSys::State *)(new Stopped())),
+IntakeSys::IntakeSys(
+  vex::distance &intake_watcher, vex::motor &intake_lower, vex::motor &intake_upper, std::function<bool()> can_intake,
+  std::function<bool()> ball_in_cata, DropMode drop
+)
+    : StateMachine(
+        drop == DropMode::Required ? (IntakeSys::State *)(new IntakeWaitForDrop()) : (IntakeSys::State *)(new Stopped())
+      ),
       intake_watcher(intake_watcher), intake_lower(intake_lower), intake_upper(intake_upper), can_intake(can_intake),
       ball_in_cata(ball_in_cata) {}

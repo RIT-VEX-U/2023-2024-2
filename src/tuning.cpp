@@ -77,7 +77,7 @@ void tune_odometry_wheelbase() {
     // right_motors.resetPosition();
   }
   double radius =
-      ENC_DIFF_IN(left_motors, right_motors) / ((double)times_to_turn * 2 * PI); // radius = arclength / theta
+    ENC_DIFF_IN(left_motors, right_motors) / ((double)times_to_turn * 2 * PI); // radius = arclength / theta
   // double radius = ENC_DIFF_IN(left_motors, right_motors) /
   // ((double)times_to_turn * 2 * PI); // radius = arclength / theta
 
