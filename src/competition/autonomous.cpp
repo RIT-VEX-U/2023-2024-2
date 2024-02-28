@@ -71,9 +71,12 @@ public:
     drive_sys.stop();
     cata_sys.send_command(CataSys::Command::StopIntake);
     cata_sys.send_command(CataSys::Command::ToggleCata);
+    vision_light.set(false);
+    con.ButtonRight.pressed([](){
+      vision_light.set(!vision_light.value());
+    });
     pose_t pos = odom.get_position();
     printf("ODO X: %.2f, Y: %.2f, R:%.2f, ", pos.x, pos.y, pos.rot);
-    vision_light.set(true);
     while (true) {
       cata_sys.send_command(CataSys::Command::StopIntake);
       double f = con.Axis3.position() / 200.0;
@@ -81,10 +84,10 @@ public:
       drive_sys.drive_arcade(f, s, 1, TankDrive::BrakeType::None);
       pose_t pos = odom.get_position();
       printf("ODO X: %.2f, Y: %.2f, R:%.2f\n", pos.x, pos.y, pos.rot);
-      // printf("GPS X: %.2f, Y: %.2f, R: %.2f Q: %d\n",
-      //     gps_sensor.xPosition(distanceUnits::in)+72,
-      //     gps_sensor.yPosition(distanceUnits::in)+72,
-      //     gps_sensor.heading(), gps_sensor.quality());
+      printf("GPS X: %.2f, Y: %.2f, R: %.2f Q: %d\n",
+          gps_sensor.xPosition(distanceUnits::in)+72,
+          gps_sensor.yPosition(distanceUnits::in)+72,
+          gps_sensor.heading(), gps_sensor.quality());
       cam.takeSnapshot(TRIBALL);
       printf(
         "X: %d, Y: %d, A: %d, Ratio: %f\n", cam.largestObject.centerX, cam.largestObject.centerY,
@@ -102,35 +105,52 @@ void awp_auto() {
   DebugCommand *tempend = new DebugCommand();
   CommandController cmd{
     // ================ INIT ================
-    odom.SetPositionCmd({.x=0, .y=0, .rot=0}),
+    odom.SetPositionCmd({.x=22, .y=21, .rot=225}),
 
     // ================ ALLIANCE TRIBALL 1 ================
     // Grab triball
     cata_sys.IntakeToHold(),
+    drive_sys.DriveForwardCmd(drive_pid, 8, FWD, 0.2)->withCancelCondition(drive_sys.DriveStalledCondition(0.2)),
     cata_sys.WaitForHold(),
-    new DelayCommand(500),
 
     // turn & try to score matchloads
-    drive_sys.DriveForwardCmd(8, REV),
-    drive_sys.TurnToHeadingCmd(0),
-    drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
-      {.x=0, .y=0},
-      {.x=0, .y=0},
-      {.x=0, .y=0},
-      {.x=0, .y=0},
-    }, 4), REV, 0.4),
+    drive_sys.DriveForwardCmd(4, REV),
+    drive_sys.TurnToHeadingCmd(140),
+    new Async (new InOrder{
+      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().x > 80;})),
+      new WingCmd(RIGHT, true),
+      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().x > 95;})),
+      new WingCmd(LEFT, true),
+      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().y > 28;})),
+      new WingCmd(LEFT, false),
 
+    }),
+    drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
+      {.x=23, .y=21},
+      {.x=29, .y=16},
+      {.x=42, .y=13},
+      {.x=95, .y=15},
+      {.x=120, .y=22},
+      {.x=133, .y=34},
+    }, 8), REV, 0.5),
+    
     // aim & push
-    drive_sys.TurnToHeadingCmd(0),
-    drive_sys.DriveForwardCmd(drive_pid, 12, REV, 0.8)->withCancelCondition(drive_sys.DriveStalledCondition(200)),
-    drive_sys.DriveForwardCmd(drive_pid, 8, FWD, 0.8)->withCancelCondition(drive_sys.DriveStalledCondition(200)),
+    drive_sys.TurnDegreesCmd(-15),
+    drive_sys.TurnToHeadingCmd(250),
+    drive_sys.DriveForwardCmd(drive_pid, 18, REV, 0.7)->withCancelCondition(drive_sys.DriveStalledCondition(0.2)),
+    drive_sys.DriveForwardCmd(8, FWD),
+    new WingCmd(RIGHT, false),
+
 
     // Turn & score alliance triball
-    drive_sys.TurnToHeadingCmd(0),
+    drive_sys.TurnToHeadingCmd(135),
+    drive_sys.TurnToHeadingCmd(77),
     cata_sys.Unintake(),
-    drive_sys.DriveForwardCmd(drive_pid, 12, FWD, 0.8)->withCancelCondition(drive_sys.DriveStalledCondition(200)),
+    new DelayCommand(300),
+    drive_sys.DriveForwardCmd(drive_pid, 18, FWD, 0.9)->withCancelCondition(drive_sys.DriveStalledCondition(0.2)),
     cata_sys.StopIntake(),
-    drive_sys.DriveForwardCmd(drive_pid, 8, REV, 0.8)->withCancelCondition(drive_sys.DriveStalledCondition(200)),
+    drive_sys.DriveForwardCmd(drive_pid, 8, REV, 0.9)->withCancelCondition(drive_sys.DriveStalledCondition(0.2)),
+    tempend,
 
     // ================ ALLIANCE TRIBALL 2 ================
     // Drive to & grab triball

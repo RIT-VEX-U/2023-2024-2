@@ -89,7 +89,8 @@ Condition *TankDrive::DriveStalledCondition(double stall_time) {
         stopped_timer.reset();
         func_initialized = true;
       }
-      if (td.odometry->get_speed() > 0) {
+      
+      if (td.odometry->get_speed() > 0.01) {
         stopped_timer.reset();
       }
       return stopped_timer.value() > stalled_for;

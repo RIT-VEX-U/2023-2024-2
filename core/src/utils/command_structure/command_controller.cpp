@@ -83,13 +83,16 @@ void CommandController::run() {
     vex::timer timeout_timer;
     timeout_timer.reset();
     bool doTimeout = next_cmd->timeout_seconds > 0.0;
-    if (next_cmd->true_to_end != nullptr) {
-      doTimeout = doTimeout || next_cmd->true_to_end->test();
-    }
 
     // run the current command until it returns true or we timeout
     while (!next_cmd->run()) {
       vexDelay(5);
+
+      if (next_cmd->true_to_end != nullptr && next_cmd->true_to_end->test()) {
+        next_cmd->on_timeout();
+        command_timed_out = true;
+        break;
+      }
 
       if (!doTimeout) {
         continue;
@@ -103,7 +106,6 @@ void CommandController::run() {
         command_timed_out = true;
         break;
       }
-      vexDelay(20);
     }
     if (should_cancel()) {
       printf("Cancelling");

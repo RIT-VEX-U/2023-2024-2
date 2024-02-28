@@ -12,7 +12,7 @@ using namespace vex;
 
 // Analog sensors
 inertial imu(PORT4);
-gps gps_sensor(PORT8, 0, 0, distanceUnits::in, 0, turnType::left);
+gps gps_sensor(PORT8, -3, 5, distanceUnits::in, 0, turnType::left);
 vex::distance intake_watcher(vex::PORT3);
 vex::optical cata_watcher(vex::PORT15);
 vex::pot cata_pot(Brain.ThreeWirePort.H);

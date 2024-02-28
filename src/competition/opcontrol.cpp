@@ -140,7 +140,7 @@ void opcontrol() {
 
 void testing() {
   // ================ AUTONOMOUS TESTING ================
-  // autonomous();
+  autonomous();
   cata_sys.send_command(CataSys::Command::ToggleCata);
   while (imu.isCalibrating() || gps_sensor.isCalibrating()) {
     vexDelay(20);
@@ -208,11 +208,15 @@ void testing() {
 
     // ================ Debug Print Statements ================
     pose_t odom_pose = odom.get_position();
-    pose_t gps_pose = GPSLocalizeCommand::get_pose_rotated();
-    printf("ODO: {%.2f, %.2f, %.2f} %f\n", odom_pose.x, odom_pose.y, odom_pose.rot, imu.heading(deg));
-    // printf("ODO: {%.2f, %.2f, %.2f} | GPS: {%.2f, %.2f, %.2f}\n",
-    //         odom_pose.x, odom_pose.y, odom_pose.rot, gps_pose.x, gps_pose.y,
-    //         gps_pose.rot);
+    pose_t gps_pose = {
+      .x = gps_sensor.xPosition(distanceUnits::in) + 72,
+      .y = gps_sensor.yPosition(distanceUnits::in) + 72,
+      .rot = gps_sensor.heading()
+    };
+    // printf("ODO: {%.2f, %.2f, %.2f} %f\n", odom_pose.x, odom_pose.y, odom_pose.rot, imu.heading(deg));
+    printf("ODO: {%.2f, %.2f, %.2f} | GPS: {%.2f, %.2f, %.2f}\n",
+            odom_pose.x, odom_pose.y, odom_pose.rot, gps_pose.x, gps_pose.y,
+            gps_pose.rot);
 
     auto objs = vision_run_filter(TRIBALL);
     int n = objs.size(), x = 0, y = 0, a = 0;
