@@ -279,6 +279,8 @@ void awp_auto() {
     drive_sys.DriveForwardCmd(drive_pid, 0, FWD, 0.3)->withCancelCondition(drive_sys.DriveStalledCondition(0.5))
 
   };
+
+  cmd.run();
   // clang-format on
 }
 

@@ -178,8 +178,8 @@ robot_specs_t robot_cfg = {
   .drive_feedback = &drive_mc_fast,
   .turn_feedback = &turn_mc, // new PID(turn_pid_cfg),
   .correction_pid = (PID::pid_config_t){
-    .p = .01,
-    // .d = .001
+    .p = .04,
+    .d = .003
   }};
 
 PID::pid_config_t pc = {

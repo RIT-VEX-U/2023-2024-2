@@ -14,7 +14,7 @@
  */
 void opcontrol() {
   // ================ TUNING CODE (Disable when not testing) ================
-  // testing();
+  testing();
 
   // ================ INIT ================
   // Ensure the catapult system is enabled during driver control
@@ -197,9 +197,9 @@ void testing() {
     static bool done_a = false;
     if (con.ButtonA.pressing() && !done_a) {
       disable_drive = true;
-      // done_a = drive_sys.drive_to_point(0, 48, directionType::fwd);
+      done_a = drive_sys.drive_to_point(24, 24, directionType::fwd, drive_mc_slow);
       // done_a = drive_sys.drive_forward(24, vex::fwd);
-      done_a = drive_sys.turn_degrees(100);
+      // done_a = drive_sys.turn_degrees(100);
     } else if (!con.ButtonA.pressing()) {
       drive_sys.reset_auto();
       disable_drive = false;
