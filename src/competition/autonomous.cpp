@@ -106,6 +106,7 @@ void awp_auto() {
   CommandController cmd{
     // ================ INIT ================
     odom.SetPositionCmd({.x=22, .y=21, .rot=225}),
+    new DelayCommand(500),
 
     // ================ ALLIANCE TRIBALL 1 ================
     // Grab triball
@@ -117,30 +118,30 @@ void awp_auto() {
     drive_sys.DriveForwardCmd(4, REV),
     drive_sys.TurnToHeadingCmd(140),
     new Async (new InOrder{
-      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().x > 80;})),
+      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().x > 75;})),
       new WingCmd(RIGHT, true),
       new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().x > 95;})),
       new WingCmd(LEFT, true),
-      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().y > 28;})),
+      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().y > 30;})),
       new WingCmd(LEFT, false),
 
     }),
     drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
       {.x=23, .y=21},
-      {.x=29, .y=16},
-      {.x=42, .y=13},
-      {.x=95, .y=15},
-      {.x=120, .y=22},
-      {.x=133, .y=34},
-    }, 8), REV, 0.5),
-    
+      {.x=27, .y=16},
+      {.x=42, .y=14},
+      {.x=94, .y=16},
+      {.x=119, .y=22},
+      {.x=120, .y=25},
+      {.x=127, .y=29},
+      {.x=126, .y=36} // {.x=129, .y=36},
+    }, 8), REV, 0.6),
     // aim & push
     drive_sys.TurnDegreesCmd(-15),
     drive_sys.TurnToHeadingCmd(250),
-    drive_sys.DriveForwardCmd(drive_pid, 18, REV, 0.7)->withCancelCondition(drive_sys.DriveStalledCondition(0.2)),
-    drive_sys.DriveForwardCmd(8, FWD),
+    drive_sys.DriveForwardCmd(drive_pid, 100, REV, 1)->withTimeout(0.5),
+    drive_sys.DriveForwardCmd(12, FWD),
     new WingCmd(RIGHT, false),
-
 
     // Turn & score alliance triball
     drive_sys.TurnToHeadingCmd(135),
@@ -149,47 +150,23 @@ void awp_auto() {
     new DelayCommand(300),
     drive_sys.DriveForwardCmd(drive_pid, 18, FWD, 0.9)->withCancelCondition(drive_sys.DriveStalledCondition(0.2)),
     cata_sys.StopIntake(),
-    drive_sys.DriveForwardCmd(drive_pid, 8, REV, 0.9)->withCancelCondition(drive_sys.DriveStalledCondition(0.2)),
-    tempend,
-
-    // ================ ALLIANCE TRIBALL 2 ================
-    // Drive to & grab triball
-    drive_sys.TurnToPointCmd(0, 0, FWD),
-    drive_sys.DriveToPointCmd({.x=0, .y=0}, FWD),
-    drive_sys.TurnToHeadingCmd(0),
-
-    cata_sys.IntakeToHold(),
-    drive_sys.DriveForwardCmd(0, FWD),
-    new FunctionCommand([](){drive_sys.drive_tank_raw(0.2, 0.2); return true;}),
-    cata_sys.WaitForHold()->withTimeout(3),
-
-    // Score alliance triball
-    drive_sys.DriveForwardCmd(0, REV),
-    drive_sys.TurnToPointCmd(0, 0, FWD),
-    drive_sys.DriveToPointCmd({.x=0, .y=0}, FWD),
-    
-    drive_sys.TurnToHeadingCmd(0),
-    cata_sys.Unintake(),
-    drive_sys.DriveForwardCmd(drive_pid, 0, FWD, 0.8)->withCancelCondition(drive_sys.DriveStalledCondition(0.5)),
-    cata_sys.StopIntake(),
 
     // Reverse & localize
-    drive_sys.DriveForwardCmd(0, REV),
-    new GPSLocalizeCommand(SIDE),
+    drive_sys.DriveForwardCmd(drive_pid, 8, REV, 0.9)->withCancelCondition(drive_sys.DriveStalledCondition(0.2)),
+    new GPSLocalizeCommand(SIDE), // 136, 36 ish
 
     // ================ GRN TRIBALL 1 ================
     // Drive to position
-    drive_sys.TurnToPointCmd(0, 0, FWD),
-    drive_sys.DriveToPointCmd({.x=0, .y=0}, FWD),
-
-    drive_sys.TurnToPointCmd(0, 0, FWD),
-    drive_sys.DriveToPointCmd({.x=0, .y=0}, FWD),
+    drive_sys.TurnToHeadingCmd(167),
+    drive_sys.DriveToPointCmd({.x=104, .y=43}, FWD),
+    new FunctionCommand(light_on),
+    drive_sys.TurnToHeadingCmd(90),
 
     // Use vision
     // IF triball exists, track & score it. ELSE set up for next run.
     new Branch{
       new VisionObjectExists(vision_filter_s {
-        .min_area = 0,
+        .min_area = 2500,
         .max_area = 1000000,
         .aspect_low = 0.5,
         .aspect_high = 2.0,
@@ -200,26 +177,28 @@ void awp_auto() {
       }),
       new InOrder{ // Object does not exist
         // Turn towards other object
-        drive_sys.TurnToPointCmd(0, 0, FWD),
+        new FunctionCommand(light_on),
+        drive_sys.TurnToPointCmd(90, 67, FWD),
       },
       new InOrder{ // Object exists
         // Track Triball
         cata_sys.IntakeToHold(),
-        (new VisionTrackTriballCommand())->withCancelCondition(new IsCrossingYValCondition(0)),
+        (new VisionTrackTriballCommand())->withCancelCondition(new IsCrossingYValCondition(73)),
 
         // Drive to scoring positition
-        drive_sys.TurnToPointCmd(0, 0, REV),
-        drive_sys.DriveToPointCmd({.x=0, .y=0}, REV),
+        // drive_sys.TurnToPointCmd(103, 58, REV),
+        drive_sys.DriveToPointCmd({.x=103, .y=58}, REV),
         drive_sys.TurnToHeadingCmd(0),
         
         // Score!
         cata_sys.Unintake(),
-        drive_sys.DriveForwardCmd(drive_pid, 0, FWD, 0.8)->withCancelCondition(drive_sys.DriveStalledCondition(0.5)),
+        drive_sys.DriveForwardCmd(drive_pid, 100, FWD, 0.3)->withCancelCondition(drive_sys.DriveStalledCondition(0.2)),
         cata_sys.StopIntake(),
-        drive_sys.DriveForwardCmd(0, REV),
+        drive_sys.DriveForwardCmd(12, REV),
         
         // Set up for next triball
-        drive_sys.TurnToPointCmd(0, 0, FWD),
+        new FunctionCommand(light_on),
+        drive_sys.TurnToPointCmd(90, 67, FWD),
 
       }
     },
@@ -227,7 +206,7 @@ void awp_auto() {
     // ================ GRN TRIBALL 2 ================
     new Branch {
       new VisionObjectExists(vision_filter_s {
-        .min_area = 0,
+        .min_area = 2500,
         .max_area = 1000000,
         .aspect_low = 0.5,
         .aspect_high = 2.0,
@@ -242,27 +221,27 @@ void awp_auto() {
       new InOrder{ // Object exists
         // Track
         cata_sys.IntakeToHold(),
-        (new VisionTrackTriballCommand())->withCancelCondition(new IsCrossingYValCondition(0)),
-
+        (new VisionTrackTriballCommand())->withCancelCondition(new IsCrossingYValCondition(73)),
         // Drive to scoring positition
-        drive_sys.TurnToPointCmd(0, 0, REV),
-        drive_sys.DriveToPointCmd({.x=0, .y=0}, REV),
+        // drive_sys.TurnToPointCmd(0, 0, REV),
+        drive_sys.DriveToPointCmd({.x=102, .y=56}, REV),
         drive_sys.TurnToHeadingCmd(0),
 
         // Score!
         cata_sys.Unintake(),
-        drive_sys.DriveForwardCmd(drive_pid, 0, FWD, 0.8)->withCancelCondition(drive_sys.DriveStalledCondition(0.5)),
+        drive_sys.DriveForwardCmd(drive_pid, 100, FWD, 0.3)->withCancelCondition(drive_sys.DriveStalledCondition(0.2)),
         cata_sys.StopIntake(),
-        drive_sys.DriveForwardCmd(0, REV),
+        drive_sys.DriveForwardCmd(12, REV),
         
       }
     },
-
     // ================ GRN TRIBALL 3 ================
-    drive_sys.TurnToHeadingCmd(0),
+    new FunctionCommand(light_on),
+    drive_sys.TurnToPointCmd(85, 46, FWD),
+
     new Branch {
       new VisionObjectExists(vision_filter_s {
-        .min_area = 0,
+        .min_area = 2000,
         .max_area = 1000000,
         .aspect_low = 0.5,
         .aspect_high = 2.0,
@@ -280,24 +259,25 @@ void awp_auto() {
         new VisionTrackTriballCommand(),
 
         // Drive to scoring positition
-        drive_sys.TurnToPointCmd(0, 0, REV),
-        drive_sys.DriveToPointCmd({.x=0, .y=0}, REV),
+        drive_sys.DriveToPointCmd({.x=101, .y=55}, REV),
         drive_sys.TurnToHeadingCmd(0),
 
         // Score!
         cata_sys.Unintake(),
-        drive_sys.DriveForwardCmd(drive_pid, 0, FWD, 0.8)->withCancelCondition(drive_sys.DriveStalledCondition(0.5)),
+        drive_sys.DriveForwardCmd(drive_pid, 100, FWD, 0.3)->withCancelCondition(drive_sys.DriveStalledCondition(0.2)),
         cata_sys.StopIntake(),
-        drive_sys.DriveForwardCmd(0, REV),
+        drive_sys.DriveForwardCmd(12, REV),
       }
     },
 
+    new GPSLocalizeCommand(SIDE),
+
     // ================ GO TO BAR AWP ================
     new GPSLocalizeCommand(SIDE),
-    drive_sys.TurnToPointCmd(0, 0, FWD),
-    drive_sys.DriveToPointCmd({.x=0, .y=0}, FWD),
-    drive_sys.DriveForwardCmd(drive_pid, 0, FWD, 0.3)->withCancelCondition(drive_sys.DriveStalledCondition(0.5))
-
+    drive_sys.TurnToPointCmd(85, 37, FWD),
+    drive_sys.DriveToPointCmd({.x=86, .y=31}, FWD),
+    drive_sys.DriveForwardCmd(drive_pid, 100, FWD, 0.2)->withCancelCondition(drive_sys.DriveStalledCondition(0.5)),
+    tempend,
   };
 
   cmd.run();

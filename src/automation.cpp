@@ -32,9 +32,9 @@ VisionTrackTriballCommand::VisionTrackTriballCommand(vision_filter_s &filter)
 bool VisionTrackTriballCommand::run() {
   static const int center_x = 160;
   static const double min_drive_speed = 0.1;
-  static const double max_drive_speed = 0.3;
+  static const double max_drive_speed = 0.5;
 
-  static const double max_angle_speed = 0.3;
+  static const double max_angle_speed = 0.5;
   static const double area_speed_scalar = 50000; // Area at which speed is zero
 
   vision_light.set(true);
@@ -126,8 +126,6 @@ std::vector<vision::object> vision_run_filter(vision::signature &sig, vision_fil
 VisionObjectExists::VisionObjectExists(vision_filter_s filter) : filter(filter) {}
 
 bool VisionObjectExists::test() {
-  vision_light.set(true);
-  vexDelay(500);
   bool retval = vision_run_filter(TRIBALL, this->filter).size() > 0;
   vision_light.set(false);
   return retval;
