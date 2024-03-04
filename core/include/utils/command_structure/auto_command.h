@@ -72,7 +72,7 @@ public:
  */
 class FunctionCommand : public AutoCommand {
 public:
-  FunctionCommand(std::function<bool(void)> f) : f(f) {}
+    FunctionCommand(std::function<bool(void)> f) : f(f) {}
   bool run() { return f(); }
 
 private:
@@ -136,8 +136,19 @@ private:
   Condition *cond;
 };
 
-/// @brief InOrder runs its commands sequentially then continues.
-/// How to handle timeout in this case. Automatically set it to sum of commands timouts?
+class AlwaysTrueCondition : public Condition {
+  public:
+  bool test() override {
+    return true;
+  }
+};
+
+class AlwaysFalseCondition : public Condition {
+  public:
+  bool test() override {
+    return false;
+  }
+};
 
 /// @brief InOrder runs its commands sequentially then continues.
 /// How to handle timeout in this case. Automatically set it to sum of commands timouts?
@@ -152,6 +163,7 @@ public:
 private:
   AutoCommand *current_command = nullptr;
   std::queue<AutoCommand *> cmds;
+  const std::queue<AutoCommand *> base_list;
   vex::timer tmr;
 };
 

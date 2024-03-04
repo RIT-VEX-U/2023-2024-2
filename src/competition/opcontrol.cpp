@@ -225,7 +225,7 @@ void testing() {
       y = objs[0].centerY;
       a = objs[0].width * objs[0].height;
     }
-    // printf("CAM: N:%d | {%d, %d}, A:%d\n", n, x, y, a);
+    printf("CAM: N:%d | {%d, %d}, A:%d\n", n, x, y, a);
     // printf("Pot: %f\n", cata_pot.angle(vex::deg));
 
     vexDelay(5);

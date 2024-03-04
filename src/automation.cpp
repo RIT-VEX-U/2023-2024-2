@@ -12,8 +12,8 @@
 vision_filter_s default_vision_filter = {
   .min_area = 300,
   .max_area = 100000,
-  .aspect_low = 0.8,
-  .aspect_high = 4,
+  .aspect_low = 0.5,
+  .aspect_high = 2.0,
 
   .min_x = 0,
   .max_x = 320,

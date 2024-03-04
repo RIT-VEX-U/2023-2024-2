@@ -38,7 +38,22 @@ public:
 class IsCrossingYValCondition : public Condition {
 public:
   IsCrossingYValCondition(int y_val) : y_val(y_val) {}
-  bool test() override { return odom.get_position().y > y_val; }
+  bool test() override { 
+    pose_t gps_pose;
+    if(SIDE == RED)
+    {
+      gps_pose.x = gps_sensor.xPosition(distanceUnits::in) + 72;
+      gps_pose.y = gps_sensor.yPosition(distanceUnits::in) + 72;
+      gps_pose.rot = gps_sensor.heading(rotationUnits::deg);
+    } else
+    {
+      gps_pose.x = 72 - gps_sensor.xPosition(distanceUnits::in);
+      gps_pose.y = 72 - gps_sensor.yPosition(distanceUnits::in);
+      gps_pose.rot = gps_sensor.heading(rotationUnits::deg);
+    }
+
+    return gps_pose.y > y_val;
+  }
 
 private:
   int y_val;
@@ -101,6 +116,8 @@ public:
 };
 
 void awp_auto() {
+
+  static std::atomic<bool> end_vision_scan(false);
   // clang-format off
   DebugCommand *tempend = new DebugCommand();
   CommandController cmd{
@@ -159,125 +176,68 @@ void awp_auto() {
     // Drive to position
     drive_sys.TurnToHeadingCmd(167),
     drive_sys.DriveToPointCmd({.x=104, .y=43}, FWD),
-    new FunctionCommand(light_on),
     drive_sys.TurnToHeadingCmd(90),
 
-    // Use vision
-    // IF triball exists, track & score it. ELSE set up for next run.
-    new Branch{
-      new VisionObjectExists(vision_filter_s {
-        .min_area = 2500,
-        .max_area = 1000000,
-        .aspect_low = 0.5,
-        .aspect_high = 2.0,
-        .min_x = 0,
-        .max_x = 320,
-        .min_y = 0,
-        .max_y = 240
+    (new RepeatUntil({
+      // Scan for triballs (turn left slowly & search with camera)
+      // Filter is important!
+      new FunctionCommand(light_on),
+      new FunctionCommand([](){
+        const vision_filter_s filter = {
+          .min_area = 2900,
+          .max_area = 1000000,
+          .aspect_low = 0.5,
+          .aspect_high = 2.0,
+
+          .min_x = 0,
+          .max_x = 320,
+          .min_y = 0,
+          .max_y = 240,
+        };
+        auto objs = vision_run_filter(TRIBALL, filter);
+        drive_sys.drive_tank_raw(-0.35, 0.35);
+
+        // After reaching a max heading, stop scanning
+        if(odom.get_position().rot > 225)
+        {
+          end_vision_scan = true;
+          return true;
+        }
+
+        // Start tracking if objects are found, else keep scanning
+        printf("num: %d, evs: %d\n", objs.size(), (bool)end_vision_scan);
+        return objs.size() > 0;
       }),
-      new InOrder{ // Object does not exist
-        // Turn towards other object
-        new FunctionCommand(light_on),
-        drive_sys.TurnToPointCmd(90, 67, FWD),
-      },
-      new InOrder{ // Object exists
-        // Track Triball
-        cata_sys.IntakeToHold(),
-        (new VisionTrackTriballCommand())->withCancelCondition(new IsCrossingYValCondition(73)),
 
-        // Drive to scoring positition
-        // drive_sys.TurnToPointCmd(103, 58, REV),
-        drive_sys.DriveToPointCmd({.x=103, .y=58}, REV),
-        drive_sys.TurnToHeadingCmd(0),
-        
-        // Score!
-        cata_sys.Unintake(),
-        drive_sys.DriveForwardCmd(drive_pid, 100, FWD, 0.3)->withCancelCondition(drive_sys.DriveStalledCondition(0.2)),
-        cata_sys.StopIntake(),
-        drive_sys.DriveForwardCmd(12, REV),
-        
-        // Set up for next triball
-        new FunctionCommand(light_on),
-        drive_sys.TurnToPointCmd(90, 67, FWD),
+      new Branch(
+        new FunctionCondition([]() -> bool { printf("testing\n");return end_vision_scan;}),
+        new InOrder{ // FALSE - do NOT end vision scan, start tracking the ball
+          cata_sys.IntakeToHold(),
+          (new VisionTrackTriballCommand())->withCancelCondition(new IsCrossingYValCondition(73)),
+          new FunctionCommand(light_off),
+          drive_sys.DriveToPointCmd({102, 58}, REV),
+          drive_sys.TurnToHeadingCmd(0),
 
-      }
-    },
-
-    // ================ GRN TRIBALL 2 ================
-    new Branch {
-      new VisionObjectExists(vision_filter_s {
-        .min_area = 2500,
-        .max_area = 1000000,
-        .aspect_low = 0.5,
-        .aspect_high = 2.0,
-        .min_x = 0,
-        .max_x = 320,
-        .min_y = 0,
-        .max_y = 240
-      }),
-      new InOrder{ // Object does not exist
-
-      },
-      new InOrder{ // Object exists
-        // Track
-        cata_sys.IntakeToHold(),
-        (new VisionTrackTriballCommand())->withCancelCondition(new IsCrossingYValCondition(73)),
-        // Drive to scoring positition
-        // drive_sys.TurnToPointCmd(0, 0, REV),
-        drive_sys.DriveToPointCmd({.x=102, .y=56}, REV),
-        drive_sys.TurnToHeadingCmd(0),
-
-        // Score!
-        cata_sys.Unintake(),
-        drive_sys.DriveForwardCmd(drive_pid, 100, FWD, 0.3)->withCancelCondition(drive_sys.DriveStalledCondition(0.2)),
-        cata_sys.StopIntake(),
-        drive_sys.DriveForwardCmd(12, REV),
-        
-      }
-    },
-    // ================ GRN TRIBALL 3 ================
-    new FunctionCommand(light_on),
-    drive_sys.TurnToPointCmd(85, 46, FWD),
-
-    new Branch {
-      new VisionObjectExists(vision_filter_s {
-        .min_area = 2000,
-        .max_area = 1000000,
-        .aspect_low = 0.5,
-        .aspect_high = 2.0,
-        .min_x = 0,
-        .max_x = 320,
-        .min_y = 0,
-        .max_y = 240
-      }),
-      new InOrder { // Object does not exist
-
-      }, 
-      new InOrder { // Object exists
-        // Track
-        cata_sys.IntakeToHold(),
-        new VisionTrackTriballCommand(),
-
-        // Drive to scoring positition
-        drive_sys.DriveToPointCmd({.x=101, .y=55}, REV),
-        drive_sys.TurnToHeadingCmd(0),
-
-        // Score!
-        cata_sys.Unintake(),
-        drive_sys.DriveForwardCmd(drive_pid, 100, FWD, 0.3)->withCancelCondition(drive_sys.DriveStalledCondition(0.2)),
-        cata_sys.StopIntake(),
-        drive_sys.DriveForwardCmd(12, REV),
-      }
-    },
-
-    new GPSLocalizeCommand(SIDE),
+          cata_sys.Unintake(),
+          drive_sys.DriveForwardCmd(drive_pid, 100, FWD, 0.5)->withTimeout(1),
+          cata_sys.StopIntake(),
+          drive_sys.DriveForwardCmd(12, REV),
+          drive_sys.TurnToHeadingCmd(90)
+          
+        },
+        new InOrder{ // TRUE - END the vision scan, exit the repeat.
+        // Do nothing here
+        }),
+      
+    }, new IfTimePassed(40)))->withCancelCondition(new FunctionCondition([]()->bool{ return end_vision_scan; })),
 
     // ================ GO TO BAR AWP ================
-    new GPSLocalizeCommand(SIDE),
-    drive_sys.TurnToPointCmd(85, 37, FWD),
-    drive_sys.DriveToPointCmd({.x=86, .y=31}, FWD),
-    drive_sys.DriveForwardCmd(drive_pid, 100, FWD, 0.2)->withCancelCondition(drive_sys.DriveStalledCondition(0.5)),
-    tempend,
+    // drive_sys.TurnToHeadingCmd(180),
+    // new GPSLocalizeCommand(SIDE),
+    drive_sys.TurnToHeadingCmd(220),
+    // drive_sys.DriveToPointCmd({.x=89, .y=52}, FWD),
+    drive_sys.DriveForwardCmd(drive_pid, 144, FWD, 0.2)->withCancelCondition(drive_sys.DriveStalledCondition(0.5)),
+    
   };
 
   cmd.run();

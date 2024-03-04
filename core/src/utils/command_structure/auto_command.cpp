@@ -39,16 +39,18 @@ bool IfTimePassed::test() { return tmr.value() > time_s; }
 InOrder::InOrder(std::queue<AutoCommand *> cmds) : cmds(cmds) {
   timeout_seconds = -1.0; // never timeout unless with_timeout is explicitly called
 }
-InOrder::InOrder(std::initializer_list<AutoCommand *> cmds) : cmds(cmds) { timeout_seconds = -1.0; }
+InOrder::InOrder(std::initializer_list<AutoCommand *> cmds) : cmds(cmds), base_list(cmds) { timeout_seconds = -1.0; }
 
 bool InOrder::run() {
   // outer loop finished
   if (cmds.size() == 0 && current_command == nullptr) {
+    cmds = std::queue<AutoCommand *>{base_list};
+    current_command = nullptr;
     return true;
   }
   // retrieve and remove command at the front of the queue
   if (current_command == nullptr) {
-    printf("TAKING INORDER: len =  %d\n", cmds.size());
+    printf("TAKING INORDER: len =  %lu\n", cmds.size());
     current_command = cmds.front();
     cmds.pop();
     tmr.reset();
@@ -84,6 +86,9 @@ void InOrder::on_timeout() {
   if (current_command != nullptr) {
     current_command->on_timeout();
   }
+  // reset
+  current_command = nullptr;
+  cmds = std::queue<AutoCommand *>{base_list};
 }
 
 struct parallel_runner_info {
@@ -180,17 +185,20 @@ bool Branch::run() {
   double seconds = static_cast<double>(tmr.time()) / 1000.0;
   if (choice == false) {
     if (seconds > false_choice->timeout_seconds && false_choice->timeout_seconds != -1) {
+      printf("false_choice timeout!\n");
       false_choice->on_timeout();
       chosen = false;
       return true;
     }
     bool finished = false_choice->run();
+    printf("finished: %d\n", finished);
     if (finished) {
       chosen = false;
       return finished;
     }
   } else {
     if (seconds > true_choice->timeout_seconds && true_choice->timeout_seconds != -1) {
+      printf("true_choice timeout\n");
       true_choice->on_timeout();
       chosen = false;
       return true;
