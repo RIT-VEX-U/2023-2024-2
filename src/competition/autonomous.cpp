@@ -66,8 +66,8 @@ void autonomous() {
   while (imu.isCalibrating() || gps_sensor.isCalibrating()) {
     vexDelay(100);
   }
-  awp_auto();
-  // skills();
+  //awp_auto();
+  skills();
 }
 
 bool light_on() {
@@ -295,39 +295,59 @@ void skills() {
 
     },
 
-    new FunctionCondition([]() { return false; })))->withTimeout(45),
+    new IfTimePassed(10))),
     cata_sys.Fire(),
 
     // Deploy wing while driving after crossing X value
     // May not be needed for side goal
     new Async(new InOrder{
-      new WaitUntilCondition(new FunctionCondition([]() { return odom.get_position().x > 90; })),
-      new WingCmd(RIGHT, true),
+      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().x > 70;})),
       new WingCmd(LEFT, true),
-      new WaitUntilCondition(new FunctionCondition([]() { return odom.get_position().x > 120; })),
+      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().x > 95;})),
+      new WingCmd(RIGHT, true),
+      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().y < 118;})),
       new WingCmd(RIGHT, false),
-      new WingCmd(LEFT, false),
+      new WingCmd(LEFT, false)
     }),
 
     // Drive SLOWLY under bar (don't push just yet)
     drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
         {.x = 15, .y = 122},
-        {.x = 21, .y = 119},
-        {.x = 29, .y = 121},
-        {.x = 41, .y = 125},
-        {.x = 71, .y = 127},
-        {.x = 98, .y = 126},
+        {.x = 21, .y = 124},
+        {.x = 29, .y = 133},
+        {.x = 41, .y = 133},
+        {.x = 71, .y = 133},
+        {.x = 98, .y = 127},
+        {.x = 105, .y = 123},
         {.x = 117, .y = 120},
-        {.x = 129, .y = 110},
-      }, 8), REV, 0.4),
+        {.x = 126, .y = 110},
+      }, 9), REV, 0.4),
       
     new WingCmd(RIGHT, false),
     drive_sys.TurnToHeadingCmd(90),
 
     // Ram, back up & ram again
     drive_sys.DriveForwardCmd(drive_pid, 24, REV, 0.8)->withTimeout(1),
+    odom.SetPositionCmd({.x = 126, .y = 96, .rot = 90}),
+    //drive_sys.DriveForwardCmd(9, FWD),
+    drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
+      {.x = 125, .y = 100},
+      {.x = 115, .y = 118},
+      {.x = 110, .y = 123},
+      {.x = 105, .y = 123},
+    }, 6), FWD, .1),
+    new WingCmd(LEFT, true),
+    drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
+      {.x = 123, .y = 120},
+      {.x = 126, .y = 122},
+      {.x = 129, .y = 120},
+      {.x = 132, .y = 113},
+      {.x = 136, .y = 108},
+      {.x = 138, .y = 50},
+    }, 4), REV, .1),
+    drive_sys.TurnToHeadingCmd(90),
+    new WingCmd(LEFT, false),
     drive_sys.DriveForwardCmd(18, FWD),
-    drive_sys.TurnToHeadingCmd(100),
     drive_sys.DriveForwardCmd(drive_pid, 24, REV, 0.8)->withTimeout(1),
     drive_sys.DriveForwardCmd(12, FWD),
 
