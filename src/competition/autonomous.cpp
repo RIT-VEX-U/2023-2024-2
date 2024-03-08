@@ -295,7 +295,7 @@ void skills() {
 
     },
 
-    new IfTimePassed(10))),
+    new IfTimePassed(30))),
     cata_sys.Fire(),
 
     // Deploy wing while driving after crossing X value
@@ -328,24 +328,42 @@ void skills() {
 
     // Ram, back up & ram again
     drive_sys.DriveForwardCmd(drive_pid, 24, REV, 0.8)->withTimeout(1),
-    odom.SetPositionCmd({.x = 126, .y = 96, .rot = 90}),
+    
+    odom.SetPositionCmd({.x = 132, .y = 102, .rot = 90}),
+    // TODO Set gps to red
+    // new GPSLocalizeCommand(BLUE),
     //drive_sys.DriveForwardCmd(9, FWD),
-    drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
-      {.x = 125, .y = 100},
-      {.x = 115, .y = 118},
-      {.x = 110, .y = 123},
-      {.x = 105, .y = 123},
-    }, 6), FWD, .1),
+    // drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
+    //   {.x = 132, .y = 111.6},
+    //   {.x = 128.5, .y = 118.25},
+    //   {.x = 119, .y = 126.7},
+    //   {.x = 107, .y = 129.73},
+    //   {.x = 94.25, .y = 129.65},
+    // }, 4), FWD, .5),
+    drive_sys.DriveToPointCmd({.x = 112, .y = 126}, FWD, .4),
+    drive_sys.TurnToHeadingCmd(180),
+    drive_sys.DriveToPointCmd({.x = 96, .y = 126}, FWD, .4),
     new WingCmd(LEFT, true),
-    drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
-      {.x = 123, .y = 120},
-      {.x = 126, .y = 122},
-      {.x = 129, .y = 120},
-      {.x = 132, .y = 113},
-      {.x = 136, .y = 108},
-      {.x = 138, .y = 50},
-    }, 4), REV, .1),
+    //new DebugCommand(),
+    // drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
+    //   {.x = 123, .y = 120},
+    //   {.x = 126, .y = 122},
+    //   {.x = 129, .y = 120},
+    //   {.x = 132, .y = 113},
+    //   {.x = 136, .y = 108},
+    //   {.x = 130, .y = 98},
+    // }, 4), REV, .1),
+    
+    
+    odom.SetPositionCmd({.x = 96, .y = 132, .rot = 180}),
+    drive_sys.DriveToPointCmd({.x = 100, 132}, REV, .4),
+    drive_sys.TurnToHeadingCmd(150),
+    drive_sys.DriveToPointCmd({.x = 123, .y = 118}, REV, .4),
+    drive_sys.TurnToHeadingCmd(110),
+    drive_sys.DriveToPointCmd({.x = 126, 111}, REV, .4),
+    new DebugCommand(),
     drive_sys.TurnToHeadingCmd(90),
+    //drive_sys.TurnToHeadingCmd(90),
     new WingCmd(LEFT, false),
     drive_sys.DriveForwardCmd(18, FWD),
     drive_sys.DriveForwardCmd(drive_pid, 24, REV, 0.8)->withTimeout(1),
