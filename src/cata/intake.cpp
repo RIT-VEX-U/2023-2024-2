@@ -47,13 +47,13 @@ std::string to_string(IntakeMessage m) {
 
 struct Stopped : IntakeSys::State {
   void entry(IntakeSys &sys) override {
-    sys.intake_lower.stop(vex::brakeType::brake);
-    sys.intake_upper.stop(vex::brakeType::brake);
+    sys.intake_lower.stop(vex::brakeType::hold);
+    sys.intake_upper.stop(vex::brakeType::hold);
   }
   void exit(IntakeSys &sys) override {
     // cuz joe doesn't like his intake on brake mode
-    sys.intake_lower.setBrake(vex::brakeType::coast);
-    sys.intake_upper.setBrake(vex::brakeType::coast);
+    sys.intake_lower.setBrake(vex::brakeType::hold);
+    sys.intake_upper.setBrake(vex::brakeType::hold);
   }
   IntakeState id() const override { return IntakeState::Stopped; }
   State *respond(IntakeSys &sys, IntakeMessage m) override;
@@ -76,7 +76,7 @@ struct Dropping : IntakeSys::State {
     }
     return {};
   }
-  void exit(IntakeSys &sys) override { sys.intake_upper.stop(vex::brakeType::coast); }
+  void exit(IntakeSys &sys) override { sys.intake_upper.stop(vex::brakeType::hold); }
   IntakeState id() const override { return IntakeState::Dropping; }
   State *respond(IntakeSys &sys, IntakeMessage m) override;
 
@@ -98,8 +98,8 @@ struct Intaking : IntakeSys::State {
     return {};
   }
   void exit(IntakeSys &sys) override {
-    sys.intake_upper.stop(vex::brakeType::coast);
-    sys.intake_lower.stop(vex::brakeType::coast);
+    sys.intake_upper.stop(vex::brakeType::hold);
+    sys.intake_lower.stop(vex::brakeType::hold);
   }
 
   IntakeState id() const override { return IntakeState::Intaking; }
@@ -118,15 +118,15 @@ struct IntakingHold : IntakeSys::State {
       tmr.reset();
     }
 
-    if (isTiming && tmr.time(vex::msec) > 50) {
+    if (isTiming && tmr.time(vex::msec) > 100) {
       return IntakeMessage::StopIntake;
     }
 
     return {};
   }
   void exit(IntakeSys &sys) override {
-    sys.intake_upper.stop(vex::brakeType::coast);
-    sys.intake_lower.stop(vex::brakeType::coast);
+    sys.intake_upper.stop(vex::brakeType::hold);
+    sys.intake_lower.stop(vex::brakeType::hold);
   }
 
   IntakeState id() const override { return IntakeState::IntakingHold; }
@@ -140,8 +140,8 @@ struct Outtaking : IntakeSys::State {
     sys.intake_lower.spin(vex::reverse, intake_lower_outer_volt, vex::volt);
   }
   void exit(IntakeSys &sys) override {
-    sys.intake_upper.stop(vex::brakeType::coast);
-    sys.intake_lower.stop(vex::brakeType::coast);
+    sys.intake_upper.stop(vex::brakeType::hold);
+    sys.intake_lower.stop(vex::brakeType::hold);
   }
   IntakeState id() const override { return IntakeState::Outtaking; }
   State *respond(IntakeSys &sys, IntakeMessage m) override;

@@ -14,7 +14,7 @@
  */
 void opcontrol() {
   // ================ TUNING CODE (Disable when not testing) ================
-  testing();
+  // testing();
 
   // ================ INIT ================
   // Ensure the catapult system is enabled during driver control
@@ -45,13 +45,13 @@ void opcontrol() {
   // con.ButtonL2.released([]() {
   // cata_sys.send_command(CataSys::Command::StopFiring); });
 
-  con.ButtonR1.pressed([]() { cata_sys.send_command(CataSys::Command::IntakeIn); });
+  con.ButtonL1.pressed([]() { cata_sys.send_command(CataSys::Command::IntakeIn); });
   con.ButtonR1.released([]() { cata_sys.send_command(CataSys::Command::StopIntake); });
 
   con.ButtonR2.pressed([]() { cata_sys.send_command(CataSys::Command::IntakeOut); });
   con.ButtonR2.released([]() { cata_sys.send_command(CataSys::Command::StopIntake); });
 
-  con.ButtonL1.pressed([]() { cata_sys.send_command(CataSys::Command::IntakeHold); });
+  con.ButtonR1.pressed([]() { cata_sys.send_command(CataSys::Command::IntakeHold); });
   con.ButtonL1.released([]() { cata_sys.send_command(CataSys::Command::StopIntake); });
 
   con.ButtonB.pressed([]() {

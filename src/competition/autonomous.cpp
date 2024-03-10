@@ -35,6 +35,9 @@ public:
   bool deploy_down;
 };
 
+// Hacky solution, rotate X degrees every time it almost crosses the line
+static std::atomic<int> angle_offset(90);
+
 class IsCrossingYValCondition : public Condition {
 public:
   IsCrossingYValCondition(int y_val) : y_val(y_val) {}
@@ -51,6 +54,8 @@ public:
       gps_pose.y = 72 - gps_sensor.yPosition(distanceUnits::in);
       gps_pose.rot = gps_sensor.heading(rotationUnits::deg);
     }
+    if(gps_pose.y > y_val)
+      angle_offset += 15;
 
     return gps_pose.y > y_val;
   }
@@ -66,8 +71,8 @@ void autonomous() {
   while (imu.isCalibrating() || gps_sensor.isCalibrating()) {
     vexDelay(100);
   }
-  //awp_auto();
-  skills();
+  awp_auto();
+  // skills();
 }
 
 bool light_on() {
@@ -99,10 +104,20 @@ public:
       drive_sys.drive_arcade(f, s, 1, TankDrive::BrakeType::None);
       pose_t pos = odom.get_position();
       printf("ODO X: %.2f, Y: %.2f, R:%.2f\n", pos.x, pos.y, pos.rot);
-      printf("GPS X: %.2f, Y: %.2f, R: %.2f Q: %d\n",
+      if (SIDE == RED)
+      {
+        printf("GPS X: %.2f, Y: %.2f, R: %.2f Q: %d\n",
           gps_sensor.xPosition(distanceUnits::in)+72,
           gps_sensor.yPosition(distanceUnits::in)+72,
           gps_sensor.heading(), gps_sensor.quality());
+      } else
+      {
+        printf("GPS X: %.2f, Y: %.2f, R: %.2f Q: %d\n",
+          72 - gps_sensor.xPosition(distanceUnits::in),
+          72 - gps_sensor.yPosition(distanceUnits::in),
+          gps_sensor.heading(), gps_sensor.quality());
+      }
+      
       cam.takeSnapshot(TRIBALL);
       printf(
         "X: %d, Y: %d, A: %d, Ratio: %f\n", cam.largestObject.centerX, cam.largestObject.centerY,
@@ -120,6 +135,7 @@ void awp_auto() {
   static std::atomic<bool> end_vision_scan(false);
   // clang-format off
   DebugCommand *tempend = new DebugCommand();
+
   CommandController cmd{
     // ================ INIT ================
     odom.SetPositionCmd({.x=22, .y=21, .rot=225}),
@@ -157,7 +173,7 @@ void awp_auto() {
     drive_sys.TurnDegreesCmd(-15),
     drive_sys.TurnToHeadingCmd(250),
     drive_sys.DriveForwardCmd(drive_pid, 100, REV, 1)->withTimeout(0.5),
-    drive_sys.DriveForwardCmd(12, FWD),
+    drive_sys.DriveForwardCmd(12, FWD)->withTimeout(1),
     new WingCmd(RIGHT, false),
 
     // Turn & score alliance triball
@@ -184,7 +200,7 @@ void awp_auto() {
       new FunctionCommand(light_on),
       new FunctionCommand([](){
         const vision_filter_s filter = {
-          .min_area = 2900,
+          .min_area = 3000,
           .max_area = 1000000,
           .aspect_low = 0.5,
           .aspect_high = 2.0,
@@ -222,21 +238,24 @@ void awp_auto() {
           drive_sys.DriveForwardCmd(drive_pid, 100, FWD, 0.5)->withTimeout(1),
           cata_sys.StopIntake(),
           drive_sys.DriveForwardCmd(12, REV),
-          drive_sys.TurnToHeadingCmd(90)
-          
+          // Hacky solution to turn a different amount each time we almost cross
+          new FunctionCommand([](){
+            CommandController({drive_sys.TurnToHeadingCmd(angle_offset)}).run();
+            return true;
+          }),
         },
         new InOrder{ // TRUE - END the vision scan, exit the repeat.
         // Do nothing here
         }),
       
-    }, new IfTimePassed(40)))->withCancelCondition(new FunctionCondition([]()->bool{ return end_vision_scan; })),
-
+    }, new IfTimePassed(38)))->withCancelCondition(new FunctionCondition([]()->bool{ return end_vision_scan; })),
+    new FunctionCommand(light_off),
     // ================ GO TO BAR AWP ================
     // drive_sys.TurnToHeadingCmd(180),
     // new GPSLocalizeCommand(SIDE),
-    drive_sys.TurnToHeadingCmd(220),
+    drive_sys.TurnToHeadingCmd(225),
     // drive_sys.DriveToPointCmd({.x=89, .y=52}, FWD),
-    drive_sys.DriveForwardCmd(drive_pid, 144, FWD, 0.2)->withCancelCondition(drive_sys.DriveStalledCondition(0.5)),
+    drive_sys.DriveForwardCmd(drive_pid, 144, FWD, 0.3)->withCancelCondition(drive_sys.DriveStalledCondition(0.5)),
     
   };
 
@@ -285,7 +304,7 @@ void skills() {
           {.x = 27, .y = 120},
         }, 4), REV, 0.3),
 
-      drive_sys.DriveForwardCmd(8, FWD)->withTimeout(3), drive_sys.TurnToHeadingCmd(135)->withTimeout(3),
+      drive_sys.DriveForwardCmd(6.75, FWD)->withTimeout(3), drive_sys.TurnToHeadingCmd(135)->withTimeout(3),
       drive_sys.DriveForwardCmd(6, FWD)->withTimeout(3),
 
       // Start intake & drive back to loading area
@@ -295,41 +314,69 @@ void skills() {
 
     },
 
-    new IfTimePassed(30))),
+    new IfTimePassed(42))),
     cata_sys.Fire(),
 
     // Deploy wing while driving after crossing X value
     // May not be needed for side goal
     new Async(new InOrder{
-      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().x > 70;})),
+      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().x > 64;})),
       new WingCmd(LEFT, true),
-      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().x > 95;})),
+      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().x > 72;})),
       new WingCmd(RIGHT, true),
       new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().y < 118;})),
       new WingCmd(RIGHT, false),
-      new WingCmd(LEFT, false)
+      // new WingCmd(LEFT, false)
     }),
 
     // Drive SLOWLY under bar (don't push just yet)
     drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
         {.x = 15, .y = 122},
         {.x = 21, .y = 124},
-        {.x = 29, .y = 133},
-        {.x = 41, .y = 133},
-        {.x = 71, .y = 133},
+        {.x = 29, .y = 135},
+        {.x = 41, .y = 135},
+        {.x = 71, .y = 135},
         {.x = 98, .y = 127},
         {.x = 105, .y = 123},
-        {.x = 117, .y = 120},
-        {.x = 126, .y = 110},
-      }, 9), REV, 0.4),
+        {.x = 120, .y = 120},
+        {.x = 130, .y = 110},
+      }, 9), REV, 0.42),
       
     new WingCmd(RIGHT, false),
     drive_sys.TurnToHeadingCmd(90),
 
     // Ram, back up & ram again
-    drive_sys.DriveForwardCmd(drive_pid, 24, REV, 0.8)->withTimeout(1),
+    drive_sys.DriveForwardCmd(drive_pid, 24, REV, 1.0)->withTimeout(1),
     
     odom.SetPositionCmd({.x = 132, .y = 102, .rot = 90}),
+
+    drive_sys.DriveForwardCmd(drive_pid, 20, FWD, 0.5)->withTimeout(1),
+
+    drive_sys.TurnToHeadingCmd(110),
+
+    drive_sys.DriveForwardCmd(drive_pid, 24, REV, 1)->withTimeout(1),
+    
+    odom.SetPositionCmd({.x = 132, .y = 102, .rot = 105}),
+
+    drive_sys.DriveForwardCmd(drive_pid, 20, FWD, 0.5)->withTimeout(1),
+
+    drive_sys.DriveForwardCmd(drive_pid, 24, REV, 1)->withTimeout(1),
+
+    odom.SetPositionCmd({.x = 132, .y = 102, .rot = 105}),
+
+    drive_sys.DriveForwardCmd(drive_pid, 20, FWD, 0.5)->withTimeout(1),
+
+    drive_sys.TurnToHeadingCmd(90),
+
+    drive_sys.DriveForwardCmd(drive_pid, 24, REV, 1)->withTimeout(1),
+
+    odom.SetPositionCmd({.x = 132, .y = 102, .rot = 90}),
+
+    drive_sys.DriveForwardCmd(drive_pid, 20, FWD, 0.5)->withTimeout(1),
+
+
+    
+
     // TODO Set gps to red
     // new GPSLocalizeCommand(BLUE),
     //drive_sys.DriveForwardCmd(9, FWD),
@@ -340,10 +387,10 @@ void skills() {
     //   {.x = 107, .y = 129.73},
     //   {.x = 94.25, .y = 129.65},
     // }, 4), FWD, .5),
-    drive_sys.DriveToPointCmd({.x = 112, .y = 126}, FWD, .4),
-    drive_sys.TurnToHeadingCmd(180),
-    drive_sys.DriveToPointCmd({.x = 96, .y = 126}, FWD, .4),
-    new WingCmd(LEFT, true),
+    // drive_sys.DriveToPointCmd({.x = 112, .y = 126}, FWD, .4),
+    // drive_sys.TurnToHeadingCmd(180),
+    // drive_sys.DriveToPointCmd({.x = 96, .y = 126}, FWD, .4),
+    // new WingCmd(LEFT, true),
     //new DebugCommand(),
     // drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
     //   {.x = 123, .y = 120},
@@ -355,30 +402,30 @@ void skills() {
     // }, 4), REV, .1),
     
     
-    odom.SetPositionCmd({.x = 96, .y = 132, .rot = 180}),
-    drive_sys.DriveToPointCmd({.x = 100, 132}, REV, .4),
-    drive_sys.TurnToHeadingCmd(150),
-    drive_sys.DriveToPointCmd({.x = 123, .y = 118}, REV, .4),
-    drive_sys.TurnToHeadingCmd(110),
-    drive_sys.DriveToPointCmd({.x = 126, 111}, REV, .4),
-    new DebugCommand(),
-    drive_sys.TurnToHeadingCmd(90),
-    //drive_sys.TurnToHeadingCmd(90),
-    new WingCmd(LEFT, false),
-    drive_sys.DriveForwardCmd(18, FWD),
-    drive_sys.DriveForwardCmd(drive_pid, 24, REV, 0.8)->withTimeout(1),
-    drive_sys.DriveForwardCmd(12, FWD),
+    // odom.SetPositionCmd({.x = 96, .y = 132, .rot = 180}),
+    // drive_sys.DriveToPointCmd({.x = 100, .y = 132}, REV, .4),
+    // drive_sys.TurnToHeadingCmd(150),
+    // drive_sys.DriveToPointCmd({.x = 123, .y = 118}, REV, .4),
+    // drive_sys.TurnToHeadingCmd(110),
+    // drive_sys.DriveToPointCmd({.x = 126, .y = 111}, REV, .4),
+    // new DebugCommand(),
+    // drive_sys.TurnToHeadingCmd(90),
+    // //drive_sys.TurnToHeadingCmd(90),
+    // new WingCmd(LEFT, false),
+    // drive_sys.DriveForwardCmd(18, FWD),
+    // drive_sys.DriveForwardCmd(drive_pid, 24, REV, 0.8)->withTimeout(1),
+    // drive_sys.DriveForwardCmd(12, FWD),
 
-    tempend,
+    // tempend,
 
     // Backup & localize
-    drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
-        {.x = 0, .y = 0},
-        {.x = 0, .y = 0},
-        {.x = 0, .y = 0},
-      }, 8), FWD, 0.4),
-    drive_sys.TurnToHeadingCmd(45),
-    new GPSLocalizeCommand(RED),
+    // drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
+    //     {.x = 0, .y = 0},
+    //     {.x = 0, .y = 0},
+    //     {.x = 0, .y = 0},
+    //   }, 8), FWD, 0.4),
+    // drive_sys.TurnToHeadingCmd(45),
+    // new GPSLocalizeCommand(RED),
   };
 
   cmd.run();

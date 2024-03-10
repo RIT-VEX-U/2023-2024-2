@@ -49,7 +49,7 @@ bool VisionTrackTriballCommand::run() {
 
   if (sensed_obj.size() <= 0) {
     // Stop & wait if there isn't anything sensed
-    drive_sys.stop();
+    drive_sys.drive_tank_raw(max_drive_speed, max_drive_speed);
     return false;
   }
 
