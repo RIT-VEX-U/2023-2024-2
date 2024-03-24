@@ -99,11 +99,62 @@ public:
   CataOnlyState id() const override { return CataOnlyState::ReadyToFire; }
 };
 
+class PrimeClimb : public CataOnlySys::State {
+  public:
+
+  void entry(CataOnlySys &sys) override {
+    sys.pid.set_target(cata_target_climb_primed);
+  };
+
+  CataOnlySys::MaybeMessage work(CataOnlySys &sys) override {
+    sys.pid.update(sys.pot.angle(vex::deg));
+    sys.mot.spin(vex::fwd, sys.pid.get(), vex::volt);
+
+    return {};
+  }; 
+
+  void exit(CataOnlySys &sys) override {
+    
+  };
+
+  CataOnlyState id() const override {
+    return CataOnlyState::PrimeClimb;
+  };
+
+  CataOnlySys::State *respond(CataOnlySys &s, CataOnlyMessage m) override;
+};
+
+class ClimbHold : public CataOnlySys::State {
+  public:
+  void entry(CataOnlySys &sys) override {
+    sys.pid.set_target(cata_target_climb_up);
+  };
+
+  CataOnlySys::MaybeMessage work(CataOnlySys &sys) override {
+    sys.pid.update(sys.pot.angle(vex::deg));
+    sys.mot.spin(vex::fwd, sys.pid.get(), vex::volt);
+
+    return {};
+  }; 
+
+  void exit(CataOnlySys &sys) override {
+
+  };
+
+  CataOnlyState id() const override {
+    return CataOnlyState::ClimbHold;
+  };
+
+  CataOnlySys::State *respond(CataOnlySys &s, CataOnlyMessage m) override;
+};
+
 CataOnlySys::State *CataOff::respond(CataOnlySys &sys, CataOnlyMessage m) {
   if (m == CataOnlyMessage::EnableCata) {
     return new Reloading();
   } else if (m == CataOnlyMessage::StartDrop) {
     return new WaitingForDrop();
+  } else if (m == CataOnlyMessage::StartClimb) {
+    return new PrimeClimb();
   }
   // Ignore other messages
   return this;
@@ -128,6 +179,8 @@ CataOnlySys::State *Reloading::respond(CataOnlySys &sys, CataOnlyMessage m) {
     } else {
       return this;
     }
+  } else if (m == CataOnlyMessage::StartClimb) {
+    return new PrimeClimb();
   }
   // Ignore other messages
   return this;
@@ -144,6 +197,8 @@ CataOnlySys::State *ReadyToFire::respond(CataOnlySys &sys, CataOnlyMessage m) {
     return new Reloading();
   } else if (m == CataOnlyMessage::DisableCata) {
     return new CataOff();
+  } else if (m == CataOnlyMessage::StartClimb) {
+    return new PrimeClimb();
   }
 
   // Ignore other messages
@@ -159,6 +214,27 @@ CataOnlySys::State *Firing::respond(CataOnlySys &sys, CataOnlyMessage m) {
   // Ignore other messages
   return this;
 }
+
+CataOnlySys::State *PrimeClimb::respond(CataOnlySys &s, CataOnlyMessage m) {
+  switch(m) {
+    case CataOnlyMessage::StopClimb:
+      return new Reloading();
+    case CataOnlyMessage::FinishClimb:
+      return new ClimbHold();
+    default:
+      return this;
+  }
+};
+
+CataOnlySys::State *ClimbHold::respond(CataOnlySys &s, CataOnlyMessage m) {
+  switch(m) {
+    case CataOnlyMessage::StopClimb:
+      return new Reloading();
+    default:
+      return this;
+  }
+};
+
 std::string to_string(CataOnlyState s) {
   switch (s) {
   case CataOnlyState::Firing:
@@ -171,6 +247,10 @@ std::string to_string(CataOnlyState s) {
     return "CataOff";
   case CataOnlyState::WaitingForDrop:
     return "WaitingForDrop";
+  case CataOnlyState::PrimeClimb:
+    return "PrimeClimb";
+  case CataOnlyState::ClimbHold:
+    return "ClimbHold";
   default:
     return "UNKNOWN CATA STATE";
   }
@@ -193,6 +273,12 @@ std::string to_string(CataOnlyMessage m) {
     return "DisableCata";
   case CataOnlyMessage::StartDrop:
     return "StartDrop";
+  case CataOnlyMessage::StartClimb:
+    return "StartClimb";
+  case CataOnlyMessage::StopClimb:
+    return "StopClimb";
+  case CataOnlyMessage::FinishClimb:
+    return "FinishClimb";
   }
   return "UNHANDLED CATA MESSAGE";
 }

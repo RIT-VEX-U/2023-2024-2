@@ -9,24 +9,11 @@
 
 #define Tank
 
-/**
- * Main entrypoint for the driver control period
- */
-void opcontrol() {
-  // ================ TUNING CODE (Disable when not testing) ================
-  // testing();
+std::atomic<bool> disable_drive(false);
+std::atomic<bool> brake_mode_toggled(false);
 
-  // ================ INIT ================
-  // Ensure the catapult system is enabled during driver control
-  if (cata_sys.get_cata_state() == CataOnlyState::CataOff) {
-    cata_sys.send_command(CataSys::Command::ToggleCata);
-  }
-
-  static bool enable_matchload = false;
-
-  left_wing.set(false);
-  right_wing.set(false);
-
+void setupJoeControls()
+{
   // Controls:
   // Catapult:
   // -- L2 - Fire (Don't if ball isn't detected)
@@ -65,7 +52,7 @@ void opcontrol() {
   con.ButtonUp.pressed([]() { cata_sys.send_command(CataSys::Command::ToggleCata); });
   pose_t start_pose = {.x = 16, .y = 144 - 16, .rot = 135};
 
-  static std::atomic<bool> disable_drive(false);
+  
 
   con.ButtonA.pressed([]() {
     // Turn Right
@@ -90,10 +77,26 @@ void opcontrol() {
   });
 
   con.ButtonDown.pressed([]() {
+    printf("BUTTON DOQN PEWSSED\n");
     // Climb
-    static bool isUp = false;
-    left_climb.set(isUp = !isUp);
-    right_climb.set(isUp);
+    CataOnlyState state = cata_sys.get_cata_state();
+    switch (state) {
+      case CataOnlyState::Reloading:
+      case CataOnlyState::ReadyToFire:
+      case CataOnlyState::CataOff:
+        printf("start CLIMB\n");
+        
+        cata_sys.send_command(CataSys::Command::StartClimb);
+        break;
+      case CataOnlyState::PrimeClimb:
+        cata_sys.send_command(CataSys::Command::FinishClimb);
+        printf("prme CLIMB\n");
+        break;
+      case CataOnlyState::ClimbHold:
+        cata_sys.send_command(CataSys::Command::StopClimb);
+        printf("stop CLIMB\n");
+        break;
+    }
   });
 
   // personal debug button >:]
@@ -102,10 +105,30 @@ void opcontrol() {
     // gps_localize_stdev();
   });
 
-  vision_light.set(false);
-
-  static std::atomic<bool> brake_mode_toggled(false);
   con.ButtonX.pressed([]() { brake_mode_toggled = !brake_mode_toggled; });
+}
+
+/**
+ * Main entrypoint for the driver control period
+ */
+void opcontrol() {
+  // ================ TUNING CODE (Disable when not testing) ================
+  testing();
+
+  // ================ INIT ================
+  // Ensure the catapult system is enabled during driver control
+  if (cata_sys.get_cata_state() == CataOnlyState::CataOff) {
+    cata_sys.send_command(CataSys::Command::ToggleCata);
+  }
+
+  static bool enable_matchload = false;
+
+  left_wing.set(false);
+  right_wing.set(false);
+
+  setupJoeControls();
+
+  vision_light.set(false);
 
   // ================ PERIODIC ================
   while (true) {
@@ -140,71 +163,57 @@ void opcontrol() {
 
 void testing() {
   // ================ AUTONOMOUS TESTING ================
-  autonomous();
+  // autonomous();
   cata_sys.send_command(CataSys::Command::ToggleCata);
+
   while (imu.isCalibrating() || gps_sensor.isCalibrating()) {
     vexDelay(20);
   }
 
-  // while(!con.ButtonA.pressing())
-  // {
-  // tune_drive_ff_kv(TURN, 0.02);
-  // tune_drive_motion_maxv(TURN);
-  // tune_drive_motion_accel(TURN, 520);
-  // CommandController{
-  //   drive_sys.DriveToPointCmd({0, 12}, vex::forward),
-  //   drive_sys.TurnToHeadingCmd(0),
-  //   drive_sys.DriveToPointCmd({12, 12}, vex::forward),
-  //   drive_sys.TurnToHeadingCmd(270),
-  //   drive_sys.DriveToPointCmd({12, 0}, vex::forward),
-  //   drive_sys.TurnToHeadingCmd(180),
-  //   drive_sys.DriveToPointCmd({0, 0}, vex::forward),
-  //   drive_sys.TurnToHeadingCmd(90),
-  // }.run();
-
-  //   vexDelay(5);
-  // }
-
-  static std::atomic<bool> disable_drive(false);
+  setupJoeControls();
 
   // // ================ ODOMETRY TESTING ================
 
   // // Reset encoder odometry to 0,0,90 with button X
-  con.ButtonX.pressed([]() { odom.set_position(); });
+  // con.ButtonX.pressed([]() { odom.set_position(); });
 
   // // Test localization with button Y
-  con.ButtonY.pressed([]() {
-    disable_drive = true;
-    vexDelay(500); // Settle first
-    GPSLocalizeCommand(RED).run();
-    disable_drive = false;
-  });
+  // con.ButtonY.pressed([]() {
+  //   disable_drive = true;
+  //   vexDelay(500); // Settle first
+  //   GPSLocalizeCommand(RED).run();
+  //   disable_drive = false;
+  // });
 
   // // ================ VISION TESTING ================
-  con.ButtonRight.pressed([]() { vision_light.set(!vision_light.value()); });
+  // con.ButtonRight.pressed([]() { vision_light.set(!vision_light.value()); });
 
-  con.ButtonLeft.pressed([]() { cata_sys.send_command(CataSys::Command::ToggleCata); });
+  // con.ButtonLeft.pressed([]() { cata_sys.send_command(CataSys::Command::ToggleCata); });
 
   while (true) {
 
     // ================ Controls ================
     double f = con.Axis3.position() / 100.0;
     double s = con.Axis1.position() / 100.0;
+    double l = con.Axis3.position() / 100.0;
+    double r = con.Axis2.position() / 100.0;
+    // if (!disable_drive)
+    //   drive_sys.drive_tank(f, s, 1, TankDrive::BrakeType::None);
     if (!disable_drive)
-      drive_sys.drive_arcade(f, s, 1, TankDrive::BrakeType::None);
+      drive_sys.drive_tank(l, r, 1, TankDrive::BrakeType::None);
 
     // ================ Drive Tuning =================
     static bool done_a = false;
-    if (con.ButtonA.pressing() && !done_a) {
-      disable_drive = true;
-      done_a = drive_sys.drive_to_point(24, 24, directionType::fwd, drive_mc_slow);
-      // done_a = drive_sys.drive_forward(24, vex::fwd);
-      // done_a = drive_sys.turn_degrees(100);
-    } else if (!con.ButtonA.pressing()) {
-      drive_sys.reset_auto();
-      disable_drive = false;
-      done_a = false;
-    }
+    // if (con.ButtonA.pressing() && !done_a) {
+    //   disable_drive = true;
+    //   done_a = drive_sys.drive_to_point(24, 24, directionType::fwd, drive_mc_slow);
+    //   // done_a = drive_sys.drive_forward(24, vex::fwd);
+    //   // done_a = drive_sys.turn_degrees(100);
+    // } else if (!con.ButtonA.pressing()) {
+    //   drive_sys.reset_auto();
+    //   disable_drive = false;
+    //   done_a = false;
+    // }
 
     // ================ Debug Print Statements ================
     pose_t odom_pose = odom.get_position();
@@ -214,19 +223,19 @@ void testing() {
       .rot = gps_sensor.heading()
     };
     // printf("ODO: {%.2f, %.2f, %.2f} %f\n", odom_pose.x, odom_pose.y, odom_pose.rot, imu.heading(deg));
-    printf("ODO: {%.2f, %.2f, %.2f} | GPS: {%.2f, %.2f, %.2f}\n",
-            odom_pose.x, odom_pose.y, odom_pose.rot, gps_pose.x, gps_pose.y,
-            gps_pose.rot);
+    // printf("ODO: {%.2f, %.2f, %.2f} | GPS: {%.2f, %.2f, %.2f}\n",
+    //         odom_pose.x, odom_pose.y, odom_pose.rot, gps_pose.x, gps_pose.y,
+    //         gps_pose.rot);
 
-    auto objs = vision_run_filter(TRIBALL);
-    int n = objs.size(), x = 0, y = 0, a = 0;
-    if (n > 0) {
-      x = objs[0].centerX;
-      y = objs[0].centerY;
-      a = objs[0].width * objs[0].height;
-    }
-    printf("CAM: N:%d | {%d, %d}, A:%d\n", n, x, y, a);
-    // printf("Pot: %f\n", cata_pot.angle(vex::deg));
+    // auto objs = vision_run_filter(TRIBALL);
+    // int n = objs.size(), x = 0, y = 0, a = 0;
+    // if (n > 0) {
+    //   x = objs[0].centerX;
+    //   y = objs[0].centerY;
+    //   a = objs[0].width * objs[0].height;
+    // }
+    // printf("CAM: N:%d | {%d, %d}, A:%d\n", n, x, y, a);
+    printf("Pot: %f\n", cata_pot.angle(vex::deg));
 
     vexDelay(5);
   }

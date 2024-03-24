@@ -13,19 +13,24 @@ enum class CataOnlyMessage {
   StartDrop,
   EnableCata,
   DisableCata,
-
+  StartClimb,
+  ClimbReleaseMotors,
+  StopClimb,
+  FinishClimb,
 };
-enum class CataOnlyState { CataOff, WaitingForDrop, Firing, Reloading, ReadyToFire };
+enum class CataOnlyState { CataOff, WaitingForDrop, Firing, Reloading, ReadyToFire, PrimeClimb, ClimbHold };
 std::string to_string(CataOnlyState s);
 std::string to_string(CataOnlyMessage s);
 
-class CataOnlySys : public StateMachine<CataOnlySys, CataOnlyState, CataOnlyMessage, 5, false> {
+class CataOnlySys : public StateMachine<CataOnlySys, CataOnlyState, CataOnlyMessage, 5, true> {
 public:
   friend struct Reloading;
   friend class Firing;
   friend class ReadyToFire;
   friend class WaitingForDrop;
   friend class CataOff;
+  friend class PrimeClimb;
+  friend class ClimbHold;
 
   friend class CataSysPage;
   CataOnlySys(vex::pot &cata_pot, vex::optical &cata_watcher, vex::motor_group &cata_motor, PIDFF &cata_pid,

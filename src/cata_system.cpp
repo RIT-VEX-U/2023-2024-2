@@ -49,6 +49,15 @@ void CataSys::send_command(Command next_cmd) {
       cata_sys.send_message(CataOnlyMessage::DisableCata);
     }
     break;
+  case CataSys::Command::StartClimb:
+    cata_sys.send_message(CataOnlyMessage::StartClimb);
+    break;
+  case CataSys::Command::StopClimb:
+    cata_sys.send_message(CataOnlyMessage::StopClimb);
+    break;
+  case CataSys::Command::FinishClimb:
+    cata_sys.send_message(CataOnlyMessage::FinishClimb);
+    break;
   default:
     break;
   }

@@ -18,6 +18,9 @@ public:
     StartDropping,
     StartFiring,
     ToggleCata,
+    StartClimb,
+    StopClimb,
+    FinishClimb,
   };
 
   CataSys(
