@@ -200,7 +200,7 @@ void awp_auto() {
       new FunctionCommand(light_on),
       new FunctionCommand([](){
         const vision_filter_s filter = {
-          .min_area = 3000,
+          .min_area = 3800,
           .max_area = 1000000,
           .aspect_low = 0.5,
           .aspect_high = 2.0,
@@ -229,7 +229,7 @@ void awp_auto() {
         new FunctionCondition([]() -> bool { printf("testing\n");return end_vision_scan;}),
         new InOrder{ // FALSE - do NOT end vision scan, start tracking the ball
           cata_sys.IntakeToHold(),
-          (new VisionTrackTriballCommand())->withCancelCondition(new IsCrossingYValCondition(73)),
+          (new VisionTrackTriballCommand())->withCancelCondition(new IsCrossingYValCondition(71)),
           new FunctionCommand(light_off),
           drive_sys.DriveToPointCmd({102, 58}, REV),
           drive_sys.TurnToHeadingCmd(0),
@@ -248,14 +248,19 @@ void awp_auto() {
         // Do nothing here
         }),
       
-    }, new IfTimePassed(38)))->withCancelCondition(new FunctionCondition([]()->bool{ return end_vision_scan; })),
+    }, new IfTimePassed(45)))->withCancelCondition(new FunctionCondition([]()->bool{ return end_vision_scan; })),
     new FunctionCommand(light_off),
     // ================ GO TO BAR AWP ================
     // drive_sys.TurnToHeadingCmd(180),
     // new GPSLocalizeCommand(SIDE),
     drive_sys.TurnToHeadingCmd(225),
     // drive_sys.DriveToPointCmd({.x=89, .y=52}, FWD),
+    tempend,
+    cata_sys.Unintake(),
     drive_sys.DriveForwardCmd(drive_pid, 144, FWD, 0.3)->withCancelCondition(drive_sys.DriveStalledCondition(0.5)),
+    cata_sys.StopIntake(),
+    drive_sys.TurnToHeadingCmd(drive_pid, 180, 0.2),
+
     
   };
 
