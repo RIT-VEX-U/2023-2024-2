@@ -40,9 +40,9 @@ extern CataSys cata_sys;
 extern digital_out left_wing;
 extern digital_out right_wing;
 
-extern digital_out left_climb;
-extern digital_out right_climb;
 extern digital_out vision_light;
+extern pneumatics endgame_sol;
+extern pneumatics cata_sol;
 
 extern motor_group left_motors;
 extern motor_group right_motors;

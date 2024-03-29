@@ -14,8 +14,6 @@ enum class CataOnlyMessage {
   EnableCata,
   DisableCata,
   StartClimb,
-  ClimbReleaseMotors,
-  StopClimb,
   FinishClimb,
 };
 enum class CataOnlyState { CataOff, WaitingForDrop, Firing, Reloading, ReadyToFire, PrimeClimb, ClimbHold };
@@ -34,7 +32,7 @@ public:
 
   friend class CataSysPage;
   CataOnlySys(vex::pot &cata_pot, vex::optical &cata_watcher, vex::motor_group &cata_motor, PIDFF &cata_pid,
-              DropMode drop);
+              DropMode drop, vex::pneumatics &endgame_sol, vex::pneumatics &cata_sol);
   bool intaking_allowed();
 
 private:
@@ -42,4 +40,5 @@ private:
   vex::optical &cata_watcher;
   vex::motor_group &mot;
   PIDFF &pid;
+  vex::pneumatics &endgame_sol, &cata_sol;
 };

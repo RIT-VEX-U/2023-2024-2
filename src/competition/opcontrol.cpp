@@ -77,24 +77,19 @@ void setupJoeControls()
   });
 
   con.ButtonDown.pressed([]() {
-    printf("BUTTON DOQN PEWSSED\n");
     // Climb
     CataOnlyState state = cata_sys.get_cata_state();
     switch (state) {
       case CataOnlyState::Reloading:
       case CataOnlyState::ReadyToFire:
       case CataOnlyState::CataOff:
-        printf("start CLIMB\n");
-        
         cata_sys.send_command(CataSys::Command::StartClimb);
         break;
       case CataOnlyState::PrimeClimb:
         cata_sys.send_command(CataSys::Command::FinishClimb);
-        printf("prme CLIMB\n");
         break;
       case CataOnlyState::ClimbHold:
-        cata_sys.send_command(CataSys::Command::StopClimb);
-        printf("stop CLIMB\n");
+        cata_sys.send_command(CataSys::Command::ToggleCata);
         break;
     }
   });

@@ -3,11 +3,11 @@
 
 CataSys::CataSys(
   vex::distance &intake_watcher, vex::pot &cata_pot, vex::optical &cata_watcher, vex::motor_group &cata_motor,
-  vex::motor &intake_upper, vex::motor &intake_lower, PIDFF &cata_feedback, DropMode drop
+  vex::motor &intake_upper, vex::motor &intake_lower, PIDFF &cata_feedback, DropMode drop, vex::pneumatics &endgame_sol, vex::pneumatics &cata_sol
 )
     : intake_watcher(intake_watcher), cata_pot(cata_pot), cata_watcher(cata_watcher), cata_motor(cata_motor),
       intake_upper(intake_upper), intake_lower(intake_lower),
-      cata_sys(cata_pot, cata_watcher, cata_motor, cata_feedback, drop),
+      cata_sys(cata_pot, cata_watcher, cata_motor, cata_feedback, drop, endgame_sol, cata_sol),
       intake_sys(
         intake_watcher, intake_lower, intake_upper, [&]() { return cata_sys.intaking_allowed(); },
         [&]() { return cata_watcher.isNearObject(); }, drop
@@ -51,9 +51,6 @@ void CataSys::send_command(Command next_cmd) {
     break;
   case CataSys::Command::StartClimb:
     cata_sys.send_message(CataOnlyMessage::StartClimb);
-    break;
-  case CataSys::Command::StopClimb:
-    cata_sys.send_message(CataOnlyMessage::StopClimb);
     break;
   case CataSys::Command::FinishClimb:
     cata_sys.send_message(CataOnlyMessage::FinishClimb);

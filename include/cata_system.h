@@ -19,13 +19,12 @@ public:
     StartFiring,
     ToggleCata,
     StartClimb,
-    StopClimb,
     FinishClimb,
   };
 
   CataSys(
     vex::distance &intake_watcher, vex::pot &cata_pot, vex::optical &cata_watcher, vex::motor_group &cata_motor,
-    vex::motor &intake_upper, vex::motor &intake_lower, PIDFF &cata_feedback, DropMode drop
+    vex::motor &intake_upper, vex::motor &intake_lower, PIDFF &cata_feedback, DropMode drop, vex::pneumatics &endgame_sol, vex::pneumatics &cata_sol
   );
   void send_command(Command cmd);
   bool can_fire() const;

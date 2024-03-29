@@ -40,6 +40,7 @@ struct Reloading : public CataOnlySys::State {
 
     sys.pid.update(sys.pot.angle(vex::deg));
     sys.pid.set_target(cata_target_charge);
+    sys.endgame_sol.close();
   }
 
   CataOnlySys::MaybeMessage work(CataOnlySys &sys) override {
@@ -66,7 +67,11 @@ struct Reloading : public CataOnlySys::State {
 
 class Firing : public CataOnlySys::State {
 public:
-  void entry(CataOnlySys &sys) override { sys.mot.spin(vex::reverse, fire_voltage, vex::volt); }
+  void entry(CataOnlySys &sys) override {
+    sys.mot.spin(vex::reverse, fire_voltage, vex::volt);
+    sys.cata_sol.open();
+  }
+
   CataOnlySys::MaybeMessage work(CataOnlySys &sys) override {
     // started goin up again
     if (sys.pot.angle(vex::deg) > done_firing_angle) {
@@ -74,6 +79,11 @@ public:
     }
     return {};
   }
+
+  void exit(CataOnlySys &sys) override {
+    sys.cata_sol.close();
+  }
+  
   CataOnlyState id() const override { return CataOnlyState::Firing; }
   State *respond(CataOnlySys &sys, CataOnlyMessage m) override;
 };
@@ -104,11 +114,13 @@ class PrimeClimb : public CataOnlySys::State {
 
   void entry(CataOnlySys &sys) override {
     sys.pid.set_target(cata_target_climb_primed);
+    sys.mot.stop(vex::coast);
+    sys.cata_sol.open();
   };
 
   CataOnlySys::MaybeMessage work(CataOnlySys &sys) override {
     sys.pid.update(sys.pot.angle(vex::deg));
-    sys.mot.spin(vex::fwd, sys.pid.get(), vex::volt);
+    // sys.mot.spin(vex::fwd, sys.pid.get(), vex::volt);
 
     return {};
   }; 
@@ -127,18 +139,21 @@ class PrimeClimb : public CataOnlySys::State {
 class ClimbHold : public CataOnlySys::State {
   public:
   void entry(CataOnlySys &sys) override {
-    sys.pid.set_target(cata_target_climb_up);
+    sys.endgame_sol.open();
   };
 
   CataOnlySys::MaybeMessage work(CataOnlySys &sys) override {
-    sys.pid.update(sys.pot.angle(vex::deg));
-    sys.mot.spin(vex::fwd, sys.pid.get(), vex::volt);
+    double ang = sys.pot.angle(vex::deg);
+
+    if(ang > cata_target_charge)
+      sys.mot.spin(vex::directionType::rev, 12, vex::volt);
+    else
+      sys.mot.stop(vex::coast);
 
     return {};
   }; 
 
   void exit(CataOnlySys &sys) override {
-
   };
 
   CataOnlyState id() const override {
@@ -217,10 +232,10 @@ CataOnlySys::State *Firing::respond(CataOnlySys &sys, CataOnlyMessage m) {
 
 CataOnlySys::State *PrimeClimb::respond(CataOnlySys &s, CataOnlyMessage m) {
   switch(m) {
-    case CataOnlyMessage::StopClimb:
-      return new Reloading();
     case CataOnlyMessage::FinishClimb:
       return new ClimbHold();
+    case CataOnlyMessage::DisableCata:
+      return new CataOff();
     default:
       return this;
   }
@@ -228,8 +243,8 @@ CataOnlySys::State *PrimeClimb::respond(CataOnlySys &s, CataOnlyMessage m) {
 
 CataOnlySys::State *ClimbHold::respond(CataOnlySys &s, CataOnlyMessage m) {
   switch(m) {
-    case CataOnlyMessage::StopClimb:
-      return new Reloading();
+    case CataOnlyMessage::DisableCata:
+      return new CataOff();
     default:
       return this;
   }
@@ -275,8 +290,6 @@ std::string to_string(CataOnlyMessage m) {
     return "StartDrop";
   case CataOnlyMessage::StartClimb:
     return "StartClimb";
-  case CataOnlyMessage::StopClimb:
-    return "StopClimb";
   case CataOnlyMessage::FinishClimb:
     return "FinishClimb";
   }
@@ -284,9 +297,9 @@ std::string to_string(CataOnlyMessage m) {
 }
 
 CataOnlySys::CataOnlySys(
-  vex::pot &cata_pot, vex::optical &cata_watcher, vex::motor_group &cata_motor, PIDFF &cata_pid, DropMode drop
+  vex::pot &cata_pot, vex::optical &cata_watcher, vex::motor_group &cata_motor, PIDFF &cata_pid, DropMode drop, vex::pneumatics &endgame_sol, vex::pneumatics &cata_sol
 )
     : StateMachine(
         (drop == DropMode::Required) ? (CataOnlySys::State *)(new CataOff()) : (CataOnlySys::State *)(new Reloading())
       ),
-      pot(cata_pot), cata_watcher(cata_watcher), mot(cata_motor), pid(cata_pid) {}
+      pot(cata_pot), cata_watcher(cata_watcher), mot(cata_motor), pid(cata_pid), endgame_sol(endgame_sol), cata_sol(cata_sol) {}
