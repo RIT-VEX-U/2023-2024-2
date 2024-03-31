@@ -40,7 +40,9 @@ struct Reloading : public CataOnlySys::State {
 
     sys.pid.update(sys.pot.angle(vex::deg));
     sys.pid.set_target(cata_target_charge);
-    sys.endgame_sol.close();
+    sys.l_endgame_sol.close();
+    sys.r_endgame_sol.close();
+    sys.cata_sol.close();
   }
 
   CataOnlySys::MaybeMessage work(CataOnlySys &sys) override {
@@ -59,6 +61,9 @@ struct Reloading : public CataOnlySys::State {
     }
     // otherwise keep chugging
     return {};
+  }
+
+  void exit(CataOnlySys &sys) override {
   }
 
   CataOnlyState id() const override { return CataOnlyState::Reloading; }
@@ -81,7 +86,7 @@ public:
   }
 
   void exit(CataOnlySys &sys) override {
-    sys.cata_sol.close();
+    
   }
   
   CataOnlyState id() const override { return CataOnlyState::Firing; }
@@ -113,14 +118,11 @@ class PrimeClimb : public CataOnlySys::State {
   public:
 
   void entry(CataOnlySys &sys) override {
-    sys.pid.set_target(cata_target_climb_primed);
-    sys.mot.stop(vex::coast);
     sys.cata_sol.open();
+    sys.mot.stop(vex::coast);
   };
 
   CataOnlySys::MaybeMessage work(CataOnlySys &sys) override {
-    sys.pid.update(sys.pot.angle(vex::deg));
-    // sys.mot.spin(vex::fwd, sys.pid.get(), vex::volt);
 
     return {};
   }; 
@@ -139,7 +141,9 @@ class PrimeClimb : public CataOnlySys::State {
 class ClimbHold : public CataOnlySys::State {
   public:
   void entry(CataOnlySys &sys) override {
-    sys.endgame_sol.open();
+    sys.l_endgame_sol.open();
+    sys.r_endgame_sol.open();
+    sys.cata_sol.close();
   };
 
   CataOnlySys::MaybeMessage work(CataOnlySys &sys) override {
@@ -297,9 +301,9 @@ std::string to_string(CataOnlyMessage m) {
 }
 
 CataOnlySys::CataOnlySys(
-  vex::pot &cata_pot, vex::optical &cata_watcher, vex::motor_group &cata_motor, PIDFF &cata_pid, DropMode drop, vex::pneumatics &endgame_sol, vex::pneumatics &cata_sol
+  vex::pot &cata_pot, vex::optical &cata_watcher, vex::motor_group &cata_motor, PIDFF &cata_pid, DropMode drop, vex::pneumatics &l_endgame_sol, vex::pneumatics &r_endgame_sol, vex::pneumatics &cata_sol
 )
     : StateMachine(
         (drop == DropMode::Required) ? (CataOnlySys::State *)(new CataOff()) : (CataOnlySys::State *)(new Reloading())
       ),
-      pot(cata_pot), cata_watcher(cata_watcher), mot(cata_motor), pid(cata_pid), endgame_sol(endgame_sol), cata_sol(cata_sol) {}
+      pot(cata_pot), cata_watcher(cata_watcher), mot(cata_motor), pid(cata_pid), l_endgame_sol(l_endgame_sol), r_endgame_sol(r_endgame_sol), cata_sol(cata_sol) {}

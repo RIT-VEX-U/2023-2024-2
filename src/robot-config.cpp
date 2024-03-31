@@ -36,16 +36,17 @@ motor intake_roller(PORT9, gearSetting::ratio18_1, false);
 motor cata_r(PORT2, gearSetting::ratio36_1, true);
 motor cata_l(PORT10, gearSetting::ratio36_1, false);
 
-vex::digital_out left_wing(Brain.ThreeWirePort.G); // Check if swapped
+vex::digital_out left_wing(Brain.ThreeWirePort.B); // Check if swapped
 vex::digital_out right_wing(Brain.ThreeWirePort.F);
 
 // endgame_sol output 1 to CLIMB pistons
 // endgame_sol output 2 to cata_sol (single acting)
 // cata_sol output 1 to catapult assist pistons
-vex::pneumatics endgame_sol(Brain.ThreeWirePort.A);
-vex::pneumatics cata_sol(Brain.ThreeWirePort.C);
+vex::pneumatics l_endgame_sol(Brain.ThreeWirePort.G);
+vex::pneumatics r_endgame_sol(Brain.ThreeWirePort.A);
+vex::pneumatics cata_sol(Brain.ThreeWirePort.D);
 
-vex::digital_out vision_light(Brain.ThreeWirePort.B);
+vex::digital_out vision_light(Brain.ThreeWirePort.C);
 
 #else
 // NEMO CONFIG
@@ -198,7 +199,7 @@ PIDFF cata_pid(pc, ffc);
 OdometryTank odom{left_motors, right_motors, robot_cfg, &imu};
 TankDrive drive_sys(left_motors, right_motors, robot_cfg, &odom);
 CataSys cata_sys(
-  intake_watcher, cata_pot, cata_watcher, cata_motors, intake_combine, intake_roller, cata_pid, DropMode::Unnecessary, endgame_sol, cata_sol
+  intake_watcher, cata_pot, cata_watcher, cata_motors, intake_combine, intake_roller, cata_pid, DropMode::Unnecessary, l_endgame_sol, r_endgame_sol, cata_sol
 );
 
 // ================ UTILS ================
@@ -219,8 +220,9 @@ void robot_init() {
 
   screen::start_screen(Brain.Screen, pages, 2);
   imu.calibrate();
-
-  endgame_sol.set(false);
+ 
+  l_endgame_sol.set(false);
+  r_endgame_sol.set(false);
   cata_sol.set(false);
 
   gps_sensor.calibrate();

@@ -23,8 +23,6 @@ const double intake_drop_seconds = 0.5;
 
 // Cata Params
 const double cata_target_charge = 22;
-const double cata_target_climb_primed = 48;
-const double cata_target_climb_up = 25;
 const double done_firing_angle = 50;
 
 const double intake_drop_seconds_until_enable = 0.25;

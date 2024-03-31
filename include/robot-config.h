@@ -41,7 +41,8 @@ extern digital_out left_wing;
 extern digital_out right_wing;
 
 extern digital_out vision_light;
-extern pneumatics endgame_sol;
+extern pneumatics l_endgame_sol;
+extern pneumatics r_endgame_sol;
 extern pneumatics cata_sol;
 
 extern motor_group left_motors;

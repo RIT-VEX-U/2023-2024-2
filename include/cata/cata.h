@@ -32,7 +32,7 @@ public:
 
   friend class CataSysPage;
   CataOnlySys(vex::pot &cata_pot, vex::optical &cata_watcher, vex::motor_group &cata_motor, PIDFF &cata_pid,
-              DropMode drop, vex::pneumatics &endgame_sol, vex::pneumatics &cata_sol);
+              DropMode drop, vex::pneumatics &l_endgame_sol, vex::pneumatics &r_endgame_sol, vex::pneumatics &cata_sol);
   bool intaking_allowed();
 
 private:
@@ -40,5 +40,5 @@ private:
   vex::optical &cata_watcher;
   vex::motor_group &mot;
   PIDFF &pid;
-  vex::pneumatics &endgame_sol, &cata_sol;
+  vex::pneumatics &l_endgame_sol, &r_endgame_sol, &cata_sol;
 };
