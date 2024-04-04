@@ -286,8 +286,9 @@ bool GPSLocalizeCommand::run() {
 }
 
 pose_t GPSLocalizeCommand::get_pose_rotated() {
-  Vector2D new_pose_vec(point_t{
-    .x = gps_sensor.xPosition(distanceUnits::in) + 72, .y = gps_sensor.yPosition(distanceUnits::in) + 72});
+  Vector2D new_pose_vec(
+    point_t{.x = gps_sensor.xPosition(distanceUnits::in) + 72, .y = gps_sensor.yPosition(distanceUnits::in) + 72}
+  );
   Vector2D rot(new_pose_vec.get_dir() + deg2rad(rotation), new_pose_vec.get_mag());
 
   return pose_t{.x = rot.get_x(), .y = rot.get_y(), .rot = gps_sensor.heading(rotationUnits::deg)};
@@ -331,4 +332,65 @@ void matchload_1(std::function<bool()> enable) {
   cmd.add_cancel_func([&]() { return !enable(); });
   cmd.run();
   cata_sys.send_command(CataSys::Command::StopIntake);
+}
+
+void drive_tank_autoaim(TankDrive::BrakeType brake) {
+
+  double left_stick = con.Axis3.position() / 100.0;
+  double right_stick = con.Axis2.position() / 100.0;
+  double avg_speed_pct = (left_stick + right_stick) / 2.0;
+
+  static bool usevision_init = true;
+  static bool novision_init = true;
+
+  // Only enable vision correction when:
+  // 1. intaking to hold
+  // 2. there isn't a ball in the intake
+  // 3. the robot is driving forward
+  if (cata_sys.get_intake_state() == IntakeState::IntakingHold && !cata_sys.ball_in_intake() && avg_speed_pct > 0) {
+    // Only set LED once per state change
+    // (Disabled while driving normally)
+    if (usevision_init) {
+      vision_light.set(true);
+      usevision_init = false;
+    }
+    novision_init = true;
+
+    auto objs = vision_run_filter(
+      TRIBALL,
+      vision_filter_s{
+        .min_area = 1500,
+        .max_area = 100000,
+        .aspect_low = 0.5,
+        .aspect_high = 2.0,
+        .min_x = 0,
+        .max_x = 320,
+        .min_y = 0,
+        .max_y = 240,
+      }
+    );
+
+    const double kP = 0.003; // Units: percent per delta pixels
+    const int setpoint = 160;
+    double correction = 0;
+
+    // Only use correction if there are objects that passed through the filter.
+    // Correction formula: simple P loop correcting for camera, scaled by
+    // how fast the robot is driving. No correction when stading still.
+    if (objs.size() > 0)
+      correction = (setpoint - objs[0].centerX) * kP * avg_speed_pct;
+
+    drive_sys.drive_tank(left_stick + correction, right_stick - correction, 1, brake);
+  } else {
+    // Only set LED once per state change
+    // (Disabled while driving normally)
+    if (novision_init) {
+      vision_light.set(false);
+      novision_init = false;
+    }
+    usevision_init = true;
+
+    // Drive normally
+    drive_sys.drive_tank(left_stick, right_stick, 1, brake);
+  }
 }

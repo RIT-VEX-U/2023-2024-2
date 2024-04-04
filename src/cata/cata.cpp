@@ -42,7 +42,7 @@ struct Reloading : public CataOnlySys::State {
     sys.pid.set_target(cata_target_charge);
     sys.l_endgame_sol.close();
     sys.r_endgame_sol.close();
-    sys.cata_sol.close();
+    sys.cata_sol.open();
   }
 
   CataOnlySys::MaybeMessage work(CataOnlySys &sys) override {
@@ -74,7 +74,6 @@ class Firing : public CataOnlySys::State {
 public:
   void entry(CataOnlySys &sys) override {
     sys.mot.spin(vex::reverse, fire_voltage, vex::volt);
-    sys.cata_sol.open();
   }
 
   CataOnlySys::MaybeMessage work(CataOnlySys &sys) override {
