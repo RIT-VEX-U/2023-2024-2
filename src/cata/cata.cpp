@@ -122,6 +122,12 @@ class PrimeClimb : public CataOnlySys::State {
   };
 
   CataOnlySys::MaybeMessage work(CataOnlySys &sys) override {
+    double ang = sys.pot.angle(vex::deg);
+
+    if(ang < cata_target_extension)
+      sys.mot.spin(vex::directionType::fwd, 12, vex::volt);
+    else
+      sys.mot.stop(vex::brakeType::hold);
 
     return {};
   }; 
@@ -185,7 +191,7 @@ CataOnlySys::State *WaitingForDrop::respond(CataOnlySys &sys, CataOnlyMessage m)
   // Ignore other messages
   return this;
 }
-
+ 
 CataOnlySys::State *Reloading::respond(CataOnlySys &sys, CataOnlyMessage m) {
   if (m == CataOnlyMessage::DoneReloading) {
     return new ReadyToFire();
