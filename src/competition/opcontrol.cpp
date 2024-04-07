@@ -8,6 +8,7 @@
 #include <atomic>
 
 #define Tank
+#define EN_AUTOAIM
 
 std::atomic<bool> disable_drive(false);
 std::atomic<bool> brake_mode_toggled(false);
@@ -108,11 +109,11 @@ void setupJoeControls()
  */
 void opcontrol() {
   // ================ TUNING CODE (Disable when not testing) ================
-  testing();
+  // testing();
 
   // ================ INIT ================
-  // Ensure the catapult system is enabled during driver control
-  if (cata_sys.get_cata_state() == CataOnlyState::CataOff) {
+  // Disable catapult while in driver (sadface)
+  if (cata_sys.get_cata_state() != CataOnlyState::CataOff) {
     cata_sys.send_command(CataSys::Command::ToggleCata);
   }
 
@@ -131,10 +132,11 @@ void opcontrol() {
     double l = con.Axis3.position() / 100.0;
     double r = con.Axis2.position() / 100.0;
     if (!disable_drive && !enable_matchload) {
-      if (brake_mode_toggled)
-        drive_sys.drive_tank(l, r, 1, TankDrive::BrakeType::Smart);
-      else
+      #ifdef EN_AUTOAIM
+        drive_tank_autoaim(TankDrive::BrakeType::None);
+      #else
         drive_sys.drive_tank(l, r, 1, TankDrive::BrakeType::None);
+      #endif
     }
 
     if (!disable_drive && enable_matchload) {
@@ -195,8 +197,8 @@ void testing() {
     // if (!disable_drive)
     //   drive_sys.drive_tank(f, s, 1, TankDrive::BrakeType::None);
     if (!disable_drive)
-      // drive_tank_autoaim(TankDrive::BrakeType::None);
-      drive_sys.drive_tank(l, r, 1, TankDrive::BrakeType::None);
+      drive_tank_autoaim(TankDrive::BrakeType::None);
+      // drive_sys.drive_tank(l, r, 1, TankDrive::BrakeType::None);
 
     // ================ Drive Tuning =================
     static bool done_a = false;

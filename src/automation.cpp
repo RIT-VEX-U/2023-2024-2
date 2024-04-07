@@ -370,7 +370,7 @@ void drive_tank_autoaim(TankDrive::BrakeType brake) {
       }
     );
 
-    const double kP = 0.003; // Units: percent per delta pixels
+    const double kP = 0.0035; // Units: percent per delta pixels
     const int setpoint = 160;
     double correction = 0;
 
