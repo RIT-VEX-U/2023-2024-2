@@ -36,17 +36,16 @@ motor intake_roller(PORT9, gearSetting::ratio18_1, false);
 motor cata_r(PORT2, gearSetting::ratio36_1, true);
 motor cata_l(PORT10, gearSetting::ratio36_1, false);
 
-vex::digital_out left_wing(Brain.ThreeWirePort.B); // Check if swapped
-vex::digital_out right_wing(Brain.ThreeWirePort.F);
+// ================ Three-Wire Ports ==============
+vex::pneumatics left_wing(Brain.ThreeWirePort.A); 
+vex::pneumatics right_wing(Brain.ThreeWirePort.F);
 
-// endgame_sol output 1 to CLIMB pistons
-// endgame_sol output 2 to cata_sol (single acting)
-// cata_sol output 1 to catapult assist pistons
+vex::pneumatics stabilizer_sol(Brain.ThreeWirePort.C);
 vex::pneumatics l_endgame_sol(Brain.ThreeWirePort.G);
-vex::pneumatics r_endgame_sol(Brain.ThreeWirePort.A);
-vex::pneumatics cata_sol(Brain.ThreeWirePort.D);
+vex::pneumatics r_endgame_sol(Brain.ThreeWirePort.D);
+vex::pneumatics cata_sol(Brain.ThreeWirePort.B);
 
-vex::digital_out vision_light(Brain.ThreeWirePort.C);
+vex::digital_out vision_light(Brain.ThreeWirePort.E);
 
 #else
 // NEMO CONFIG
@@ -224,6 +223,7 @@ void robot_init() {
   l_endgame_sol.set(false);
   r_endgame_sol.set(false);
   cata_sol.set(false);
+  stabilizer_sol.close();
 
   gps_sensor.calibrate();
 }

@@ -1,3 +1,4 @@
+#pragma once
 #include "../core/include/utils/controls/pidff.h"
 #include "cata/common.h"
 #include "vex.h"

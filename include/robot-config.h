@@ -37,10 +37,11 @@ extern OdometryTank odom;
 extern TankDrive drive_sys;
 
 extern CataSys cata_sys;
-extern digital_out left_wing;
-extern digital_out right_wing;
+extern pneumatics left_wing;
+extern pneumatics right_wing;
 
 extern digital_out vision_light;
+extern pneumatics stabilizer_sol;
 extern pneumatics l_endgame_sol;
 extern pneumatics r_endgame_sol;
 extern pneumatics cata_sol;

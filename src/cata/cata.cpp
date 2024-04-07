@@ -1,4 +1,5 @@
 #include "cata/cata.h"
+#include "robot-config.h"
 
 bool intake_can_be_enabled(double cata_pos) {
   return (cata_pos == 0.0) || (cata_pos > inake_enable_lower_threshold && cata_pos < intake_enable_upper_threshold);
@@ -119,6 +120,7 @@ class PrimeClimb : public CataOnlySys::State {
   void entry(CataOnlySys &sys) override {
     sys.cata_sol.open();
     sys.mot.stop(vex::coast);
+    stabilizer_sol.open();
   };
 
   CataOnlySys::MaybeMessage work(CataOnlySys &sys) override {
@@ -149,6 +151,7 @@ class ClimbHold : public CataOnlySys::State {
     sys.l_endgame_sol.open();
     sys.r_endgame_sol.open();
     sys.cata_sol.close();
+    stabilizer_sol.close();
   };
 
   CataOnlySys::MaybeMessage work(CataOnlySys &sys) override {

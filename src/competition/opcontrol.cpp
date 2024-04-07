@@ -195,8 +195,8 @@ void testing() {
     // if (!disable_drive)
     //   drive_sys.drive_tank(f, s, 1, TankDrive::BrakeType::None);
     if (!disable_drive)
-      drive_tank_autoaim(TankDrive::BrakeType::None);
-      // drive_sys.drive_tank(l, r, 1, TankDrive::BrakeType::None);
+      // drive_tank_autoaim(TankDrive::BrakeType::None);
+      drive_sys.drive_tank(l, r, 1, TankDrive::BrakeType::None);
 
     // ================ Drive Tuning =================
     static bool done_a = false;
