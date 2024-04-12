@@ -41,23 +41,24 @@ static std::atomic<int> angle_offset(90);
 class IsCrossingYValCondition : public Condition {
 public:
   IsCrossingYValCondition(int y_val) : y_val(y_val) {}
-  bool test() override { 
-    pose_t gps_pose;
-    if(SIDE == RED)
-    {
-      gps_pose.x = gps_sensor.xPosition(distanceUnits::in) + 72;
-      gps_pose.y = gps_sensor.yPosition(distanceUnits::in) + 72;
-      gps_pose.rot = gps_sensor.heading(rotationUnits::deg);
-    } else
-    {
-      gps_pose.x = 72 - gps_sensor.xPosition(distanceUnits::in);
-      gps_pose.y = 72 - gps_sensor.yPosition(distanceUnits::in);
-      gps_pose.rot = gps_sensor.heading(rotationUnits::deg);
-    }
-    if(gps_pose.y > y_val)
-      angle_offset += 15;
+  bool test() override {
 
-    return gps_pose.y > y_val;
+    pose_t odom_pose = odom.get_position();
+
+    // pose_t gps_pose;
+    // if (SIDE == RED) {
+    //   gps_pose.x = gps_sensor.xPosition(distanceUnits::in) + 72;
+    //   gps_pose.y = gps_sensor.yPosition(distanceUnits::in) + 72;
+    //   gps_pose.rot = gps_sensor.heading(rotationUnits::deg);
+    // } else {
+    //   gps_pose.x = 72 - gps_sensor.xPosition(distanceUnits::in);
+    //   gps_pose.y = 72 - gps_sensor.yPosition(distanceUnits::in);
+    //   gps_pose.rot = gps_sensor.heading(rotationUnits::deg);
+    // }
+    // if (gps_pose.y > y_val)
+    //   angle_offset += 15;
+
+    return odom_pose.y > y_val;
   }
 
 private:
@@ -68,6 +69,9 @@ private:
  * Main entrypoint for the autonomous period
  */
 void autonomous() {
+  if (cata_sys.get_cata_state() != CataOnlyState::CataOff)
+    cata_sys.send_command(CataSys::Command::ToggleCata);
+
   while (imu.isCalibrating() || gps_sensor.isCalibrating()) {
     vexDelay(100);
   }
@@ -90,11 +94,8 @@ public:
   bool run() override {
     drive_sys.stop();
     cata_sys.send_command(CataSys::Command::StopIntake);
-    cata_sys.send_command(CataSys::Command::ToggleCata);
     vision_light.set(false);
-    con.ButtonRight.pressed([](){
-      vision_light.set(!vision_light.value());
-    });
+    con.ButtonRight.pressed([]() { vision_light.set(!vision_light.value()); });
     pose_t pos = odom.get_position();
     printf("ODO X: %.2f, Y: %.2f, R:%.2f, ", pos.x, pos.y, pos.rot);
     while (true) {
@@ -104,20 +105,18 @@ public:
       drive_sys.drive_arcade(f, s, 1, TankDrive::BrakeType::None);
       pose_t pos = odom.get_position();
       printf("ODO X: %.2f, Y: %.2f, R:%.2f\n", pos.x, pos.y, pos.rot);
-      if (SIDE == RED)
-      {
-        printf("GPS X: %.2f, Y: %.2f, R: %.2f Q: %d\n",
-          gps_sensor.xPosition(distanceUnits::in)+72,
-          gps_sensor.yPosition(distanceUnits::in)+72,
-          gps_sensor.heading(), gps_sensor.quality());
-      } else
-      {
-        printf("GPS X: %.2f, Y: %.2f, R: %.2f Q: %d\n",
-          72 - gps_sensor.xPosition(distanceUnits::in),
-          72 - gps_sensor.yPosition(distanceUnits::in),
-          gps_sensor.heading(), gps_sensor.quality());
+      if (SIDE == RED) {
+        printf(
+          "GPS X: %.2f, Y: %.2f, R: %.2f Q: %d\n", gps_sensor.xPosition(distanceUnits::in) + 72,
+          gps_sensor.yPosition(distanceUnits::in) + 72, gps_sensor.heading(), gps_sensor.quality()
+        );
+      } else {
+        printf(
+          "GPS X: %.2f, Y: %.2f, R: %.2f Q: %d\n", 72 - gps_sensor.xPosition(distanceUnits::in),
+          72 - gps_sensor.yPosition(distanceUnits::in), gps_sensor.heading(), gps_sensor.quality()
+        );
       }
-      
+
       cam.takeSnapshot(TRIBALL);
       printf(
         "X: %d, Y: %d, A: %d, Ratio: %f\n", cam.largestObject.centerX, cam.largestObject.centerY,
@@ -136,6 +135,8 @@ void awp_auto() {
   // clang-format off
   DebugCommand *tempend = new DebugCommand();
 
+  static int vis_tball_num = 0;
+
   CommandController cmd{
     // ================ INIT ================
     odom.SetPositionCmd({.x=22, .y=21, .rot=225}),
@@ -151,11 +152,11 @@ void awp_auto() {
     drive_sys.DriveForwardCmd(4, REV),
     drive_sys.TurnToHeadingCmd(140),
     new Async (new InOrder{
-      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().x > 75;})),
+      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().x > 74;})),
       new WingCmd(RIGHT, true),
       new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().x > 95;})),
       new WingCmd(LEFT, true),
-      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().y > 30;})),
+      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().y > 33;})),
       new WingCmd(LEFT, false),
 
     }),
@@ -166,15 +167,16 @@ void awp_auto() {
       {.x=94, .y=16},
       {.x=119, .y=22},
       {.x=120, .y=25},
-      {.x=127, .y=29},
+      {.x=129, .y=28},
       {.x=126, .y=36} // {.x=129, .y=36},
     }, 8), REV, 0.6),
     // aim & push
-    drive_sys.TurnDegreesCmd(-15),
+    new WingCmd(RIGHT, false),
+    // drive_sys.TurnDegreesCmd(-15),
     drive_sys.TurnToHeadingCmd(250),
     drive_sys.DriveForwardCmd(drive_pid, 100, REV, 1)->withTimeout(0.5),
     drive_sys.DriveForwardCmd(12, FWD)->withTimeout(1),
-    new WingCmd(RIGHT, false),
+    
 
     // Turn & score alliance triball
     drive_sys.TurnToHeadingCmd(135),
@@ -188,19 +190,20 @@ void awp_auto() {
     drive_sys.DriveForwardCmd(drive_pid, 8, REV, 0.9)->withCancelCondition(drive_sys.DriveStalledCondition(0.2)),
     new GPSLocalizeCommand(SIDE), // 136, 36 ish
 
-    // ================ GRN TRIBALL 1 ================
+    // ================ GRN TRIBALL 1-2 ================
     // Drive to position
-    drive_sys.TurnToHeadingCmd(167),
-    drive_sys.DriveToPointCmd({.x=104, .y=43}, FWD),
-    drive_sys.TurnToHeadingCmd(90),
-
+    drive_sys.TurnToHeadingCmd(168),
+    drive_sys.DriveToPointCmd({.x=99, .y=40}, FWD),
+    
     (new RepeatUntil({
       // Scan for triballs (turn left slowly & search with camera)
       // Filter is important!
       new FunctionCommand(light_on),
+      drive_sys.TurnToHeadingCmd(90),
       new FunctionCommand([](){
+        
         const vision_filter_s filter = {
-          .min_area = 3800,
+          .min_area = 2500,
           .max_area = 1000000,
           .aspect_low = 0.5,
           .aspect_high = 2.0,
@@ -211,7 +214,7 @@ void awp_auto() {
           .max_y = 240,
         };
         auto objs = vision_run_filter(TRIBALL, filter);
-        drive_sys.drive_tank_raw(-0.35, 0.35);
+        drive_sys.drive_tank_raw(-0.8, 0.8);
 
         // After reaching a max heading, stop scanning
         if(odom.get_position().rot > 225)
@@ -226,7 +229,7 @@ void awp_auto() {
       }),
 
       new Branch(
-        new FunctionCondition([]() -> bool { printf("testing\n");return end_vision_scan;}),
+        new FunctionCondition([]() -> bool {return end_vision_scan;}),
         new InOrder{ // FALSE - do NOT end vision scan, start tracking the ball
           cata_sys.IntakeToHold(),
           (new VisionTrackTriballCommand())->withCancelCondition(new IsCrossingYValCondition(71)),
@@ -237,18 +240,76 @@ void awp_auto() {
           cata_sys.Unintake(),
           drive_sys.DriveForwardCmd(drive_pid, 100, FWD, 0.5)->withTimeout(1),
           cata_sys.StopIntake(),
-          drive_sys.DriveForwardCmd(12, REV),
-          // Hacky solution to turn a different amount each time we almost cross
-          new FunctionCommand([](){
-            CommandController({drive_sys.TurnToHeadingCmd(angle_offset)}).run();
-            return true;
-          }),
+          drive_sys.DriveForwardCmd(18, REV),
+          new FunctionCommand([](){vis_tball_num++; return true;})
+          
         },
         new InOrder{ // TRUE - END the vision scan, exit the repeat.
-        // Do nothing here
+          new FunctionCommand([](){end_vision_scan = false; return true;})
         }),
       
-    }, new IfTimePassed(45)))->withCancelCondition(new FunctionCondition([]()->bool{ return end_vision_scan; })),
+    }, 
+    (new IfTimePassed(45))))->
+    withCancelCondition(new FunctionCondition([]()->bool{ return vis_tball_num >= 2 || end_vision_scan; })),
+    drive_sys.DriveToPointCmd({94, 53}, REV),
+    new FunctionCommand(light_on),
+    drive_sys.TurnToHeadingCmd(135),
+
+  // ================ GRN TRIBALL 3-6 ================
+    // Stage 2 of vision tracking
+    (new RepeatUntil({
+      
+      new FunctionCommand([](){
+        
+        const vision_filter_s filter = {
+          .min_area = 2500,
+          .max_area = 1000000,
+          .aspect_low = 0.5,
+          .aspect_high = 2.0,
+
+          .min_x = 0,
+          .max_x = 320,
+          .min_y = 0,
+          .max_y = 240,
+        };
+        auto objs = vision_run_filter(TRIBALL, filter);
+        drive_sys.drive_tank_raw(-0.8, 0.8);
+
+        // After reaching a max heading, stop scanning
+        if(odom.get_position().rot > 225)
+        {
+          end_vision_scan = true;
+          return true;
+        }
+
+        // Start tracking if objects are found, else keep scanning
+        printf("num: %d, evs: %d\n", objs.size(), (bool)end_vision_scan);
+        return objs.size() > 0;
+      }),
+
+      new Branch(
+        new FunctionCondition([]()->bool{return end_vision_scan;}),
+        new InOrder{ // USE VISION
+          cata_sys.IntakeToHold(),
+          new VisionTrackTriballCommand(),
+          drive_sys.DriveForwardCmd(18, REV),
+          drive_sys.TurnToHeadingCmd(0),
+          cata_sys.Unintake(),
+          drive_sys.DriveForwardCmd(100, FWD, 0.5)->withTimeout(1),
+          cata_sys.StopIntake(),
+          drive_sys.DriveToPointCmd({94,43}, REV),
+          new FunctionCommand(light_on),
+          drive_sys.TurnToHeadingCmd(90),
+          
+        },
+        new InOrder{ // DONE with vision scan
+          
+        }
+      )
+
+    }, new IfTimePassed(45))),
+    tempend,
+
     new FunctionCommand(light_off),
     // ================ GO TO BAR AWP ================
     // drive_sys.TurnToHeadingCmd(180),

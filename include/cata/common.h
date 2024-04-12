@@ -17,7 +17,7 @@ const double intake_lower_volt = 12.0;
 const double intake_upper_volt_hold = 10.0;
 const double intake_lower_volt_hold = 8.0;
 
-const double intake_sensor_dist_mm = 150;
+const double intake_sensor_dist_mm = 100;
 
 const double intake_drop_seconds = 0.5;
 

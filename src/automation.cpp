@@ -11,7 +11,7 @@
 // VISION TRACKING
 vision_filter_s default_vision_filter = {
   .min_area = 300,
-  .max_area = 100000,
+  .max_area = 1000000,
   .aspect_low = 0.5,
   .aspect_high = 2.0,
 
@@ -32,7 +32,7 @@ VisionTrackTriballCommand::VisionTrackTriballCommand(vision_filter_s &filter)
 bool VisionTrackTriballCommand::run() {
   static const int center_x = 160;
   static const double min_drive_speed = 0.1;
-  static const double max_drive_speed = 0.5;
+  static const double max_drive_speed = 0.35;
 
   static const double max_angle_speed = 0.5;
   static const double area_speed_scalar = 50000; // Area at which speed is zero

@@ -109,7 +109,7 @@ void setupJoeControls()
  */
 void opcontrol() {
   // ================ TUNING CODE (Disable when not testing) ================
-  // testing();
+  testing();
 
   // ================ INIT ================
   // Disable catapult while in driver (sadface)
@@ -160,7 +160,7 @@ void opcontrol() {
 
 void testing() {
   // ================ AUTONOMOUS TESTING ================
-  // autonomous();
+  autonomous();
   cata_sys.send_command(CataSys::Command::ToggleCata);
 
   while (imu.isCalibrating() || gps_sensor.isCalibrating()) {
@@ -194,8 +194,7 @@ void testing() {
     double s = con.Axis1.position() / 100.0;
     double l = con.Axis3.position() / 100.0;
     double r = con.Axis2.position() / 100.0;
-    // if (!disable_drive)
-    //   drive_sys.drive_tank(f, s, 1, TankDrive::BrakeType::None);
+
     if (!disable_drive)
       drive_tank_autoaim(TankDrive::BrakeType::None);
       // drive_sys.drive_tank(l, r, 1, TankDrive::BrakeType::None);

@@ -21,7 +21,7 @@ enum class CataOnlyState { CataOff, WaitingForDrop, Firing, Reloading, ReadyToFi
 std::string to_string(CataOnlyState s);
 std::string to_string(CataOnlyMessage s);
 
-class CataOnlySys : public StateMachine<CataOnlySys, CataOnlyState, CataOnlyMessage, 5, true> {
+class CataOnlySys : public StateMachine<CataOnlySys, CataOnlyState, CataOnlyMessage, 5, false> {
 public:
   friend struct Reloading;
   friend class Firing;

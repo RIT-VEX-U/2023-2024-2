@@ -128,7 +128,7 @@ PID::pid_config_t drive_mc_pid_cfg = {
   .p = 0.1,
   // .i = 0,
   .d = 0.005,
-  .deadband = 1,
+  .deadband = 2,
   .on_target_time = 0.01,
 };
 
@@ -161,7 +161,7 @@ MotionController::m_profile_cfg_t turn_mc_cfg{
       .p = 0.06,
       // .i = 0,
       .d = 0.001,
-      .deadband = 3, // Get within X degrees of the setpoint
+      .deadband = 6, // Get within X degrees of the setpoint
       .on_target_time = .01,
     },
   .ff_cfg = FeedForward::ff_config_t{
