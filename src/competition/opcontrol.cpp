@@ -161,7 +161,10 @@ void opcontrol() {
 void testing() {
   // ================ AUTONOMOUS TESTING ================
   autonomous();
-  cata_sys.send_command(CataSys::Command::ToggleCata);
+  
+  if (cata_sys.get_cata_state() != CataOnlyState::CataOff) {
+    cata_sys.send_command(CataSys::Command::ToggleCata);
+  }
 
   while (imu.isCalibrating() || gps_sensor.isCalibrating()) {
     vexDelay(20);

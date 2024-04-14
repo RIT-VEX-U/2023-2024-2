@@ -75,6 +75,7 @@ void autonomous() {
   while (imu.isCalibrating() || gps_sensor.isCalibrating()) {
     vexDelay(100);
   }
+  
   awp_auto();
   // skills();
 }
@@ -136,6 +137,7 @@ void awp_auto() {
   DebugCommand *tempend = new DebugCommand();
 
   static int vis_tball_num = 0;
+  #define END_EARLY_TIME 37
 
   CommandController cmd{
     // ================ INIT ================
@@ -214,7 +216,7 @@ void awp_auto() {
           .max_y = 240,
         };
         auto objs = vision_run_filter(TRIBALL, filter);
-        drive_sys.drive_tank_raw(-0.8, 0.8);
+        drive_sys.drive_tank_raw(-0.5, 0.5);
 
         // After reaching a max heading, stop scanning
         if(odom.get_position().rot > 225)
@@ -234,7 +236,7 @@ void awp_auto() {
           cata_sys.IntakeToHold(),
           (new VisionTrackTriballCommand())->withCancelCondition(new IsCrossingYValCondition(71)),
           new FunctionCommand(light_off),
-          drive_sys.DriveToPointCmd({102, 58}, REV),
+          drive_sys.DriveToPointCmd({98, 58}, REV),
           drive_sys.TurnToHeadingCmd(0),
 
           cata_sys.Unintake(),
@@ -249,7 +251,7 @@ void awp_auto() {
         }),
       
     }, 
-    (new IfTimePassed(45))))->
+    (new IfTimePassed(END_EARLY_TIME))))->
     withCancelCondition(new FunctionCondition([]()->bool{ return vis_tball_num >= 2 || end_vision_scan; })),
     drive_sys.DriveToPointCmd({94, 53}, REV),
     new FunctionCommand(light_on),
@@ -259,7 +261,7 @@ void awp_auto() {
     // Stage 2 of vision tracking
     (new RepeatUntil({
       
-      new FunctionCommand([](){
+      (new FunctionCommand([](){
         
         const vision_filter_s filter = {
           .min_area = 2500,
@@ -273,7 +275,7 @@ void awp_auto() {
           .max_y = 240,
         };
         auto objs = vision_run_filter(TRIBALL, filter);
-        drive_sys.drive_tank_raw(-0.8, 0.8);
+        drive_sys.drive_tank_raw(-0.5, 0.5);
 
         // After reaching a max heading, stop scanning
         if(odom.get_position().rot > 225)
@@ -285,14 +287,14 @@ void awp_auto() {
         // Start tracking if objects are found, else keep scanning
         printf("num: %d, evs: %d\n", objs.size(), (bool)end_vision_scan);
         return objs.size() > 0;
-      }),
+      }))->withCancelCondition(new IfTimePassed(END_EARLY_TIME)),
 
       new Branch(
         new FunctionCondition([]()->bool{return end_vision_scan;}),
-        new InOrder{ // USE VISION
+        (new InOrder{ // USE VISION
           cata_sys.IntakeToHold(),
           new VisionTrackTriballCommand(),
-          drive_sys.DriveForwardCmd(18, REV),
+          drive_sys.DriveForwardCmd(14, REV),
           drive_sys.TurnToHeadingCmd(0),
           cata_sys.Unintake(),
           drive_sys.DriveForwardCmd(100, FWD, 0.5)->withTimeout(1),
@@ -301,26 +303,24 @@ void awp_auto() {
           new FunctionCommand(light_on),
           drive_sys.TurnToHeadingCmd(90),
           
-        },
+        })->withCancelCondition(new IfTimePassed(END_EARLY_TIME)),
         new InOrder{ // DONE with vision scan
           
         }
       )
 
-    }, new IfTimePassed(45))),
-    tempend,
+    }, (new IfTimePassed(END_EARLY_TIME))->Or(new FunctionCondition([]()->bool{return end_vision_scan;})))),
 
     new FunctionCommand(light_off),
     // ================ GO TO BAR AWP ================
     // drive_sys.TurnToHeadingCmd(180),
     // new GPSLocalizeCommand(SIDE),
-    drive_sys.TurnToHeadingCmd(225),
+    drive_sys.TurnToHeadingCmd(230),
     // drive_sys.DriveToPointCmd({.x=89, .y=52}, FWD),
-    tempend,
-    cata_sys.Unintake(),
+    cata_sys.IntakeToHold(),
     drive_sys.DriveForwardCmd(drive_pid, 144, FWD, 0.3)->withCancelCondition(drive_sys.DriveStalledCondition(0.5)),
     cata_sys.StopIntake(),
-    drive_sys.TurnToHeadingCmd(drive_pid, 180, 0.2),
+    tempend,
 
     
   };
