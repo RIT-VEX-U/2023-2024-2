@@ -8,7 +8,7 @@ bool CataOnlySys::intaking_allowed() {
   double cata_pos = pot.angle(vex::deg);
 
   return (
-    (cata_pos == 0.0) || (cata_pos > inake_enable_lower_threshold && cata_pos < intake_enable_upper_threshold) &&
+    // (cata_pos == 0.0) || (cata_pos > inake_enable_lower_threshold && cata_pos < intake_enable_upper_threshold) &&
                            !cata_watcher.isNearObject()
   );
 }

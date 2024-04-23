@@ -19,11 +19,7 @@ void CataSys::send_command(Command next_cmd) {
     cata_sys.send_message(CataOnlyMessage::Fire);
     break;
   case CataSys::Command::IntakeIn:
-    if (cata_sys.current_state() == CataOnlyState::CataOff) {
-      intake_sys.send_message(IntakeMessage::IntakeHold);
-    } else {
-      intake_sys.send_message(IntakeMessage::Intake);
-    }
+    intake_sys.send_message(IntakeMessage::Intake);
     break;
   case CataSys::Command::IntakeOut:
     intake_sys.send_message(IntakeMessage::Outtake);

@@ -8,7 +8,7 @@
 #include <atomic>
 
 #define Tank
-#define EN_AUTOAIM
+// #define EN_AUTOAIM
 
 std::atomic<bool> disable_drive(false);
 std::atomic<bool> brake_mode_toggled(false);
@@ -109,7 +109,7 @@ void setupJoeControls()
  */
 void opcontrol() {
   // ================ TUNING CODE (Disable when not testing) ================
-  testing();
+  // testing();
 
   // ================ INIT ================
   // Disable catapult while in driver (sadface)
