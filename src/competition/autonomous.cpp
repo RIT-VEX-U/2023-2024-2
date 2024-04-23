@@ -130,6 +130,8 @@ public:
   }
 };
 
+// #define ELIMS
+
 void awp_auto() {
 
   static std::atomic<bool> end_vision_scan(false);
@@ -137,8 +139,11 @@ void awp_auto() {
   DebugCommand *tempend = new DebugCommand();
 
   static int vis_tball_num = 0;
+  #ifdef ELIMS
+  #define END_EARLY_TIME 40
+  #else
   #define END_EARLY_TIME 37
-
+  #endif
   CommandController cmd{
     // ================ INIT ================
     odom.SetPositionCmd({.x=22, .y=21, .rot=225}),
@@ -299,7 +304,7 @@ void awp_auto() {
           cata_sys.Unintake(),
           drive_sys.DriveForwardCmd(100, FWD, 0.5)->withTimeout(1),
           cata_sys.StopIntake(),
-          drive_sys.DriveToPointCmd({94,43}, REV),
+          drive_sys.DriveToPointCmd({94,47}, REV),
           new FunctionCommand(light_on),
           drive_sys.TurnToHeadingCmd(90),
           
@@ -312,6 +317,11 @@ void awp_auto() {
     }, (new IfTimePassed(END_EARLY_TIME))->Or(new FunctionCondition([]()->bool{return end_vision_scan;})))),
 
     new FunctionCommand(light_off),
+    #ifdef ELIMS
+    drive_sys.TurnToHeadingCmd(305),
+    drive_sys.DriveToPointCmd({122, 14}, FWD),
+    drive_sys.TurnToHeadingCmd(55),
+    #else
     // ================ GO TO BAR AWP ================
     // drive_sys.TurnToHeadingCmd(180),
     // new GPSLocalizeCommand(SIDE),
@@ -319,9 +329,10 @@ void awp_auto() {
     // drive_sys.DriveToPointCmd({.x=89, .y=52}, FWD),
     cata_sys.IntakeToHold(),
     drive_sys.DriveForwardCmd(drive_pid, 144, FWD, 0.3)->withCancelCondition(drive_sys.DriveStalledCondition(0.5)),
+
+    #endif
     cata_sys.StopIntake(),
     tempend,
-
     
   };
 
