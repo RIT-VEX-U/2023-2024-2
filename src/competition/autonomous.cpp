@@ -441,7 +441,7 @@ void skills() {
       //new DelayCommand(100),
       new Branch(new FunctionCondition([](){
         return !cata_watcher.isNearObject();
-      }), cata_sys.Fire(), (new InOrder{
+      }), (new InOrder{drive_sys.DriveForwardCmd(6, REV), cata_sys.Fire()}), (new InOrder{
         drive_sys.TurnToHeadingCmd(45, .5),
 
       
@@ -535,6 +535,7 @@ void skills() {
     drive_sys.TurnToHeadingCmd(105),
 
     drive_sys.DriveForwardCmd(drive_pid, 24, REV, 1)->withTimeout(1),
+    drive_sys.DriveForwardCmd(3, FWD),
 
     // new DebugCommand(),
     
