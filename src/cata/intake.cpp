@@ -118,7 +118,7 @@ struct IntakingHold : IntakeSys::State {
       tmr.reset();
     }
 
-    if (isTiming && tmr.time(vex::msec) > 100) {
+    if (isTiming && tmr.time(vex::msec) > 90) {
       return IntakeMessage::StopIntake;
     }
 

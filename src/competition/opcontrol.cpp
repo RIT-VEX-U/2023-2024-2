@@ -159,6 +159,7 @@ void opcontrol() {
 }
 
 void testing() {
+  
   // ================ AUTONOMOUS TESTING ================
   autonomous();
   
@@ -170,6 +171,7 @@ void testing() {
     vexDelay(20);
   }
 
+  
   setupJoeControls();
 
   // // ================ ODOMETRY TESTING ================

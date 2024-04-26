@@ -69,15 +69,12 @@ private:
  * Main entrypoint for the autonomous period
  */
 void autonomous() {
-  if (cata_sys.get_cata_state() != CataOnlyState::CataOff)
-    cata_sys.send_command(CataSys::Command::ToggleCata);
-
   while (imu.isCalibrating() || gps_sensor.isCalibrating()) {
     vexDelay(100);
   }
   
-  awp_auto();
-  // skills();
+  //awp_auto();
+  skills();
 }
 
 bool light_on() {
@@ -133,6 +130,8 @@ public:
 // #define ELIMS
 
 void awp_auto() {
+  if (cata_sys.get_cata_state() != CataOnlyState::CataOff)
+    cata_sys.send_command(CataSys::Command::ToggleCata);
 
   static std::atomic<bool> end_vision_scan(false);
   // clang-format off
@@ -350,18 +349,20 @@ void skills() {
 
   CommandController cmd {
     odom.SetPositionCmd({.x = 19, .y = 117, .rot = 135}), // GPS says starting pt is
-    (new RepeatUntil(InOrder {
+    
+    
+   (new RepeatUntil(InOrder {
 
       // Matchloading!
       cata_sys.IntakeFully(),
       // Push against bar slowly & wait for triball to load
       new FunctionCommand([]() {
-        drive_sys.drive_tank(0.1, 0.1);
+        drive_sys.drive_tank(0.3, 0.3);
         return true;
       }),
 
       // Up against the wall, reset odometry
-      cata_sys.WaitForIntake()->withTimeout(2), odom.SetPositionCmd({.x = 15, .y = 121, .rot = 135}),
+      cata_sys.WaitForIntake()->withTimeout(.75), odom.SetPositionCmd({.x = 15, .y = 121, .rot = 135}),
 
       new FunctionCommand([]() {
         vex::task([]() {
@@ -375,14 +376,18 @@ void skills() {
 
       // Drive to firing position
       drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
-          {.x = 15, .y = 121},
-          {.x = 17, .y = 120},
-          {.x = 19, .y = 120},
-          {.x = 27, .y = 120},
-        }, 4), REV, 0.3),
+          {.x = 18.12, .y = 117.96},
+          {.x = 20.85, .y = 115.79},
+          {.x = 23.79, .y = 113.87},
+          {.x = 26.68, .y = 112.25},
+        }, 3), REV, 0.37),
 
-      drive_sys.DriveForwardCmd(6.75, FWD)->withTimeout(3), drive_sys.TurnToHeadingCmd(135)->withTimeout(3),
-      drive_sys.DriveForwardCmd(6, FWD)->withTimeout(3),
+      //new DebugCommand(),
+
+      drive_sys.DriveForwardCmd(6, FWD)->withTimeout(2),
+      drive_sys.TurnToHeadingCmd(135)->withTimeout(2),
+      drive_sys.DriveForwardCmd(6, FWD)->withTimeout(2),
+      
 
       // Start intake & drive back to loading area
       cata_sys.IntakeFully(),
@@ -391,65 +396,165 @@ void skills() {
 
     },
 
-    new IfTimePassed(42))),
+    new IfTimePassed(25))), 
+    
     cata_sys.Fire(),
+    
+    
+    (new RepeatUntil(InOrder{
+
+      // Matchloading!
+      cata_sys.IntakeToHold(),
+      // Push against bar slowly & wait for triball to load
+      new FunctionCommand([]() {
+        drive_sys.drive_tank(0.2, 0.2);
+        return true;
+      }),
+
+      cata_sys.WaitForHold() -> withTimeout(2),
+      // Up against the wall, reset odometry
+
+      odom.SetPositionCmd({.x = 15, .y = 121, .rot = 135}),
+
+      // new FunctionCommand([]() {
+      //   vex::task([]() {
+      //     vexDelay(600);
+      //     cata_sys.send_command(CataSys::Command::StartFiring);
+      //     return 0;
+      //   });
+
+      //   return true;
+      // }),
+
+      //new DebugCommand(),
+
+      // Drive to firing position
+      // drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
+      //     {.x = 15, .y = 121},
+      //     {.x = 17, .y = 124},
+      //     {.x = 19, .y = 126},
+      //     {.x = 27, .y = 126},
+      //   }, 4), REV, 0.3),
+
+      drive_sys.DriveForwardCmd(6, REV, .5)->withTimeout(2),
+
+      //new DelayCommand(100),
+      new Branch(new FunctionCondition([](){
+        return !cata_watcher.isNearObject();
+      }), cata_sys.Fire(), (new InOrder{
+        drive_sys.TurnToHeadingCmd(45, .5),
+
+      
+        cata_sys.Unintake(),
+        cata_sys.WaitForIntake()->withTimeout(.55),
+        cata_sys.StopIntake(),
+
+        new DelayCommand(200),
+
+        drive_sys.TurnToHeadingCmd(137, .5),
+
+      })),
+      
+      
+
+      
+
+      drive_sys.DriveForwardCmd(7, FWD, .5),
+
+      
+
+      // drive_sys.DriveForwardCmd(8, FWD)->withTimeout(2), drive_sys.TurnToHeadingCmd(135)->withTimeout(2),
+      //drive_sys.DriveForwardCmd(6, FWD)->withTimeout(3),
+
+      // Start intake & drive back to loading area
+      
+
+      // Done, go back to beginning of matchloading
+
+    }, new IfTimePassed(45))),
+
+    
 
     // Deploy wing while driving after crossing X value
     // May not be needed for side goal
     new Async(new InOrder{
-      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().x > 64;})),
-      new WingCmd(LEFT, true),
+      // new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().x > 64;})),
+      // new WingCmd(LEFT, true),
       new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().x > 72;})),
       new WingCmd(RIGHT, true),
-      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().y < 118;})),
+      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().x > 85;})),
+      new WingCmd(LEFT, true),
+      new WaitUntilCondition(new FunctionCondition([](){ return odom.get_position().y < 105;})),
       new WingCmd(RIGHT, false),
-      // new WingCmd(LEFT, false)
+      new WingCmd(LEFT, false)
     }),
+
+    drive_sys.DriveForwardCmd(6, REV),
+    drive_sys.TurnToHeadingCmd(230),
+
+    //new DebugCommand(),
 
     // Drive SLOWLY under bar (don't push just yet)
     drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
-        {.x = 15, .y = 122},
-        {.x = 21, .y = 124},
-        {.x = 29, .y = 135},
-        {.x = 41, .y = 135},
-        {.x = 71, .y = 135},
-        {.x = 98, .y = 127},
-        {.x = 105, .y = 123},
-        {.x = 120, .y = 120},
-        {.x = 130, .y = 110},
+        {.x = 23.53, .y = 118.5},
+        {.x = 27.42, .y = 121},
+        {.x = 32.32, .y = 122.8},
+        {.x = 40.75, .y = 125.3},
+        {.x = 67.33, .y = 125.3},
+        {.x = 82, .y = 122},
+        {.x = 92.15, .y = 120.2},
+        {.x = 100.75, .y = 118.29},
+        {.x = 107.86, .y = 115.69},
+        {.x = 113.55, .y = 112.54},
+        {.x = 117.37, .y = 108.97},
+        {.x = 120.48, .y = 104.82},
+        {.x = 122.9, .y = 99.53},
+
       }, 9), REV, 0.42),
+
+    //new DebugCommand(),
+
+    
       
     new WingCmd(RIGHT, false),
-    drive_sys.TurnToHeadingCmd(90),
+    new WingCmd(LEFT, false),
+    
+    // new DebugCommand(),
+    // drive_sys.DriveForwardCmd(6. FWD)
+    drive_sys.TurnToHeadingCmd(110),
 
     // Ram, back up & ram again
     drive_sys.DriveForwardCmd(drive_pid, 24, REV, 1.0)->withTimeout(1),
+
+    //new DebugCommand(),
+
+    odom.SetPositionCmd({.x = 126, .y = 80, .rot = 90}),
+
+    drive_sys.DriveForwardCmd(drive_pid, 20, FWD, 0.5)->withTimeout(1),
+
+    drive_sys.TurnToHeadingCmd(105),
+
+    drive_sys.DriveForwardCmd(drive_pid, 24, REV, 1)->withTimeout(1),
+
+    // new DebugCommand(),
     
-    odom.SetPositionCmd({.x = 132, .y = 102, .rot = 90}),
+    // odom.SetPositionCmd({.x = 132, .y = 102, .rot = 105}),
 
-    drive_sys.DriveForwardCmd(drive_pid, 20, FWD, 0.5)->withTimeout(1),
+    // drive_sys.DriveForwardCmd(drive_pid, 20, FWD, 0.5)->withTimeout(1),
 
-    drive_sys.TurnToHeadingCmd(110),
+    // drive_sys.DriveForwardCmd(drive_pid, 24, REV, 1)->withTimeout(1),
 
-    drive_sys.DriveForwardCmd(drive_pid, 24, REV, 1)->withTimeout(1),
-    
-    odom.SetPositionCmd({.x = 132, .y = 102, .rot = 105}),
+    // odom.SetPositionCmd({.x = 132, .y = 102, .rot = 105}),
 
-    drive_sys.DriveForwardCmd(drive_pid, 20, FWD, 0.5)->withTimeout(1),
+    // drive_sys.DriveForwardCmd(drive_pid, 20, FWD, 0.5)->withTimeout(1),
 
-    drive_sys.DriveForwardCmd(drive_pid, 24, REV, 1)->withTimeout(1),
+    // drive_sys.TurnToHeadingCmd(90),
 
-    odom.SetPositionCmd({.x = 132, .y = 102, .rot = 105}),
+    // drive_sys.DriveForwardCmd(drive_pid, 24, REV, 1)->withTimeout(1),
 
-    drive_sys.DriveForwardCmd(drive_pid, 20, FWD, 0.5)->withTimeout(1),
+    // odom.SetPositionCmd({.x = 132, .y = 102, .rot = 90}),
 
-    drive_sys.TurnToHeadingCmd(90),
-
-    drive_sys.DriveForwardCmd(drive_pid, 24, REV, 1)->withTimeout(1),
-
-    odom.SetPositionCmd({.x = 132, .y = 102, .rot = 90}),
-
-    drive_sys.DriveForwardCmd(drive_pid, 20, FWD, 0.5)->withTimeout(1),
+    // drive_sys.DriveForwardCmd(drive_pid, 20, FWD, 0.5)->withTimeout(1),
 
 
     
