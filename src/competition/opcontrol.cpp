@@ -109,7 +109,7 @@ void setupJoeControls()
  */
 void opcontrol() {
   // ================ TUNING CODE (Disable when not testing) ================
-  testing();
+  // testing();
 
   // ================ INIT ================
   // Disable catapult while in driver (sadface)

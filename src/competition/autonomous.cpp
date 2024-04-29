@@ -69,12 +69,10 @@ private:
  * Main entrypoint for the autonomous period
  */
 void autonomous() {
-  while (imu.isCalibrating() || gps_sensor.isCalibrating()) {
-    vexDelay(100);
-  }
   
-  //awp_auto();
-  skills();
+  
+  awp_auto();
+  // skills();
 }
 
 bool light_on() {
@@ -132,6 +130,10 @@ public:
 void awp_auto() {
   if (cata_sys.get_cata_state() != CataOnlyState::CataOff)
     cata_sys.send_command(CataSys::Command::ToggleCata);
+
+  while (imu.isCalibrating() || gps_sensor.isCalibrating()) {
+    vexDelay(100);
+  }
 
   static std::atomic<bool> end_vision_scan(false);
   // clang-format off
@@ -344,6 +346,9 @@ FunctionCondition *is_in_cata() {
 }
 
 void skills() {
+  while (imu.isCalibrating() || gps_sensor.isCalibrating()) {
+    vexDelay(100);
+  }
   // clang-format off
   auto tempend = new DebugCommand();
 
