@@ -8,7 +8,7 @@
 #define FWD vex::directionType::fwd
 #define REV vex::directionType::rev
 
-#define SIDE RED
+#define SIDE BLUE
 
 enum Side { LEFT, RIGHT };
 
@@ -171,13 +171,13 @@ void awp_auto() {
     drive_sys.PurePursuitCmd(drive_pid, PurePursuit::Path({
       {.x=23, .y=21},
       {.x=27, .y=16},
-      {.x=42, .y=14},
-      {.x=94, .y=16},
-      {.x=119, .y=22},
-      {.x=120, .y=25},
-      {.x=129, .y=28},
-      {.x=126, .y=36} // {.x=129, .y=36},
-    }, 8), REV, 0.6),
+      {.x=42, .y=13},
+      {.x=92, .y=13},
+      {.x=125, .y=16},
+      {.x=127, .y=25},
+      {.x=136, .y=28},
+      {.x=136, .y=36} // {.x=129, .y=36},
+    }, 8), REV, 0.6)->withCancelCondition(drive_sys.DriveStalledCondition(0.5)),
     // aim & push
     new WingCmd(RIGHT, false),
     // drive_sys.TurnDegreesCmd(-15),
