@@ -10,10 +10,10 @@
 
 // VISION TRACKING
 vision_filter_s default_vision_filter = {
-  .min_area = 300,
+  .min_area = 2000,
   .max_area = 1000000,
-  .aspect_low = 0.5,
-  .aspect_high = 2.0,
+  .aspect_low = 0.6,
+  .aspect_high = 1.6,
 
   .min_x = 0,
   .max_x = 320,

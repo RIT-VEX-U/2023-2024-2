@@ -211,10 +211,10 @@ void awp_auto() {
       new FunctionCommand([](){
         
         const vision_filter_s filter = {
-          .min_area = 2500,
+          .min_area = 2200,
           .max_area = 1000000,
-          .aspect_low = 0.5,
-          .aspect_high = 2.0,
+          .aspect_low = 0.6,
+          .aspect_high = 1.5,
 
           .min_x = 0,
           .max_x = 320,
@@ -242,7 +242,7 @@ void awp_auto() {
           cata_sys.IntakeToHold(),
           (new VisionTrackTriballCommand())->withCancelCondition(new IsCrossingYValCondition(71)),
           new FunctionCommand(light_off),
-          drive_sys.DriveToPointCmd({98, 58}, REV),
+          drive_sys.DriveToPointCmd({98, 61}, REV),
           drive_sys.TurnToHeadingCmd(0),
 
           cata_sys.Unintake(),
@@ -270,10 +270,10 @@ void awp_auto() {
       (new FunctionCommand([](){
         
         const vision_filter_s filter = {
-          .min_area = 2500,
+          .min_area = 2000,
           .max_area = 1000000,
-          .aspect_low = 0.5,
-          .aspect_high = 2.0,
+          .aspect_low = 0.6,
+          .aspect_high = 1.6,
 
           .min_x = 0,
           .max_x = 320,
@@ -299,8 +299,8 @@ void awp_auto() {
         new FunctionCondition([]()->bool{return end_vision_scan;}),
         (new InOrder{ // USE VISION
           cata_sys.IntakeToHold(),
-          new VisionTrackTriballCommand(),
-          drive_sys.DriveForwardCmd(14, REV),
+          (new VisionTrackTriballCommand())->withCancelCondition(drive_sys.DriveStalledCondition(2)),
+          drive_sys.DriveForwardCmd(3, REV),
           drive_sys.TurnToHeadingCmd(0),
           cata_sys.Unintake(),
           drive_sys.DriveForwardCmd(100, FWD, 0.5)->withTimeout(1),
@@ -329,7 +329,7 @@ void awp_auto() {
     drive_sys.TurnToHeadingCmd(230),
     // drive_sys.DriveToPointCmd({.x=89, .y=52}, FWD),
     cata_sys.IntakeToHold(),
-    drive_sys.DriveForwardCmd(drive_pid, 144, FWD, 0.3)->withCancelCondition(drive_sys.DriveStalledCondition(0.5)),
+    drive_sys.DriveForwardCmd(drive_pid, 144, FWD, 0.35)->withCancelCondition(drive_sys.DriveStalledCondition(0.5)),
 
     #endif
     cata_sys.StopIntake(),

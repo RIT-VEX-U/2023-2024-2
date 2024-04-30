@@ -1,6 +1,6 @@
 /*vex-vision-config:begin*/
 #include "vex.h"
-vex::vision::signature TRIBALL = vex::vision::signature (1, -5479, -5009, -5244, -4063, -3457, -3760, 10, 0);
+vex::vision::signature TRIBALL = vex::vision::signature (1, -6383, -5461, -5922, -6185, -4857, -5522, 5.9, 0);
 vex::vision::signature SIG_2 = vex::vision::signature (2, 0, 0, 0, 0, 0, 0, 3, 0);
 vex::vision::signature SIG_3 = vex::vision::signature (3, 0, 0, 0, 0, 0, 0, 2.5, 0);
 vex::vision::signature SIG_4 = vex::vision::signature (4, 0, 0, 0, 0, 0, 0, 2.5, 0);
