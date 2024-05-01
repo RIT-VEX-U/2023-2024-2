@@ -1,4 +1,5 @@
 #include "robot-config.h"
+#include "../core/include/subsystems/fun/video.h"
 brain Brain;
 controller con;
 #define COMP_BOT
@@ -210,14 +211,18 @@ std::vector<screen::Page *> pages;
  */
 void robot_init() {
 
+  set_video("funky_low.mpeg");
+
+
   pages = {
     new AutoChooser({"Auto 1", "Auto 2", "Auto 3", "Auto 4"}),
     new screen::OdometryPage(odom, 12, 12, true),
     cata_sys.Page(),
     new screen::StatsPage(motor_names),
+    new VideoPlayer()
   };
 
-  screen::start_screen(Brain.Screen, pages, 2);
+  screen::start_screen(Brain.Screen, pages, 4);
   imu.calibrate();
  
   l_endgame_sol.set(false);

@@ -8,7 +8,7 @@
 #define FWD vex::directionType::fwd
 #define REV vex::directionType::rev
 
-#define SIDE BLUE
+#define SIDE RED
 
 enum Side { LEFT, RIGHT };
 
@@ -125,7 +125,7 @@ public:
   }
 };
 
-// #define ELIMS
+#define ELIMS
 
 void awp_auto() {
   if (cata_sys.get_cata_state() != CataOnlyState::CataOff)
@@ -141,7 +141,7 @@ void awp_auto() {
 
   static int vis_tball_num = 0;
   #ifdef ELIMS
-  #define END_EARLY_TIME 40
+  #define END_EARLY_TIME 45
   #else
   #define END_EARLY_TIME 37
   #endif
@@ -211,10 +211,10 @@ void awp_auto() {
       new FunctionCommand([](){
         
         const vision_filter_s filter = {
-          .min_area = 2200,
+          .min_area = 2000,
           .max_area = 1000000,
-          .aspect_low = 0.6,
-          .aspect_high = 1.5,
+          .aspect_low = 0.5,
+          .aspect_high = 2,
 
           .min_x = 0,
           .max_x = 320,
@@ -225,7 +225,7 @@ void awp_auto() {
         drive_sys.drive_tank_raw(-0.5, 0.5);
 
         // After reaching a max heading, stop scanning
-        if(odom.get_position().rot > 225)
+        if(odom.get_position().rot > 270)
         {
           end_vision_scan = true;
           return true;
@@ -240,7 +240,7 @@ void awp_auto() {
         new FunctionCondition([]() -> bool {return end_vision_scan;}),
         new InOrder{ // FALSE - do NOT end vision scan, start tracking the ball
           cata_sys.IntakeToHold(),
-          (new VisionTrackTriballCommand())->withCancelCondition(new IsCrossingYValCondition(71)),
+          (new VisionTrackTriballCommand())->withCancelCondition((new IsCrossingYValCondition(71))->Or(drive_sys.DriveStalledCondition(1))),
           new FunctionCommand(light_off),
           drive_sys.DriveToPointCmd({98, 61}, REV),
           drive_sys.TurnToHeadingCmd(0),
@@ -272,8 +272,8 @@ void awp_auto() {
         const vision_filter_s filter = {
           .min_area = 2000,
           .max_area = 1000000,
-          .aspect_low = 0.6,
-          .aspect_high = 1.6,
+          .aspect_low = 0.5,
+          .aspect_high = 2,
 
           .min_x = 0,
           .max_x = 320,
@@ -284,7 +284,7 @@ void awp_auto() {
         drive_sys.drive_tank_raw(-0.5, 0.5);
 
         // After reaching a max heading, stop scanning
-        if(odom.get_position().rot > 225)
+        if(odom.get_position().rot > 270)
         {
           end_vision_scan = true;
           return true;
@@ -300,7 +300,8 @@ void awp_auto() {
         (new InOrder{ // USE VISION
           cata_sys.IntakeToHold(),
           (new VisionTrackTriballCommand())->withCancelCondition(drive_sys.DriveStalledCondition(2)),
-          drive_sys.DriveForwardCmd(3, REV),
+          drive_sys.DriveToPointCmd({92, 57}, REV),
+          // drive_sys.DriveForwardCmd(3, REV),
           drive_sys.TurnToHeadingCmd(0),
           cata_sys.Unintake(),
           drive_sys.DriveForwardCmd(100, FWD, 0.5)->withTimeout(1),
@@ -320,6 +321,7 @@ void awp_auto() {
     new FunctionCommand(light_off),
     #ifdef ELIMS
     drive_sys.TurnToHeadingCmd(305),
+    // new DelayCommand(3),
     drive_sys.DriveToPointCmd({122, 14}, FWD),
     drive_sys.TurnToHeadingCmd(55),
     #else
